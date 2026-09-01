@@ -8,6 +8,7 @@ import com.financialrecord.entity.Category;
 import com.financialrecord.entity.Transaction;
 import com.financialrecord.entity.User;
 import com.financialrecord.entity.Wallet;
+import com.financialrecord.entity.enums.PocketType;
 import com.financialrecord.entity.enums.TransactionType;
 import com.financialrecord.entity.enums.WalletType;
 import com.financialrecord.exception.ResourceNotFoundException;
@@ -98,6 +99,9 @@ public class TransactionServiceImpl implements TransactionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User tidak ditemukan"));
 
+        TransactionType txType = request.getType() != null ? request.getType() : TransactionType.EXPENSE;
+        PocketType targetPocketType = (txType == TransactionType.INCOME) ? PocketType.INCOME : PocketType.EXPENSE;
+
         // 1. Resolve Wallet (Guarantee non-null wallet)
         Wallet wallet = null;
         if (request.getWalletId() != null) {
@@ -105,15 +109,23 @@ public class TransactionServiceImpl implements TransactionService {
         }
         if (wallet == null) {
             List<Wallet> userWallets = walletRepository.findByUserIdOrderByCreatedAtAsc(userId);
-            if (userWallets.isEmpty()) {
+            // Look for matching pocketType first
+            wallet = userWallets.stream()
+                    .filter(w -> w.getPocketType() == targetPocketType)
+                    .findFirst()
+                    .orElse(userWallets.isEmpty() ? null : userWallets.get(0));
+
+            if (wallet == null) {
+                String defaultName = (txType == TransactionType.INCOME) ? "Kantong Pemasukan Utama" : "Kantong Pengeluaran Harian";
                 wallet = walletRepository.save(Wallet.builder()
                         .user(user)
-                        .name("Cash Dompet")
-                        .type(WalletType.CASH)
+                        .name(defaultName)
+                        .type(WalletType.BANK)
+                        .pocketType(targetPocketType)
+                        .aiGenerated(true)
+                        .aiInsight("Dibuat otomatis oleh AI saat transaksi dicatat")
                         .balance(BigDecimal.ZERO)
                         .build());
-            } else {
-                wallet = userWallets.get(0);
             }
         }
 
@@ -133,7 +145,6 @@ public class TransactionServiceImpl implements TransactionService {
 
         // 3. Adjust wallet balance
         BigDecimal amount = request.getAmount() != null ? request.getAmount() : BigDecimal.ZERO;
-        TransactionType txType = request.getType() != null ? request.getType() : TransactionType.EXPENSE;
 
         if (txType == TransactionType.EXPENSE) {
             wallet.setBalance(wallet.getBalance().subtract(amount));
@@ -344,6 +355,9 @@ public class TransactionServiceImpl implements TransactionService {
                         .id(w.getId())
                         .name(w.getName())
                         .type(w.getType())
+                        .pocketType(w.getPocketType() != null ? w.getPocketType() : PocketType.EXPENSE)
+                        .aiGenerated(Boolean.TRUE.equals(w.getAiGenerated()))
+                        .aiInsight(w.getAiInsight())
                         .balance(w.getBalance())
                         .createdAt(w.getCreatedAt())
                         .updatedAt(w.getUpdatedAt())

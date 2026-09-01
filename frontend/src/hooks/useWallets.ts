@@ -36,8 +36,27 @@ export function useWallets() {
     },
   });
 
+  const allWallets = walletsQuery.data || [];
+
+  const incomeWallets = allWallets.filter(
+    (w) => w.pocketType === 'INCOME'
+  );
+
+  const expenseWallets = allWallets.filter(
+    (w) => w.pocketType !== 'INCOME'
+  );
+
+  const totalIncomeBalance = incomeWallets.reduce((acc, w) => acc + (w.balance || 0), 0);
+  const totalExpenseBalance = expenseWallets.reduce((acc, w) => acc + (w.balance || 0), 0);
+  const totalAllBalance = allWallets.reduce((acc, w) => acc + (w.balance || 0), 0);
+
   return {
-    wallets: walletsQuery.data || [],
+    wallets: allWallets,
+    incomeWallets,
+    expenseWallets,
+    totalIncomeBalance,
+    totalExpenseBalance,
+    totalAllBalance,
     isLoading: walletsQuery.isLoading,
     isError: walletsQuery.isError,
     refetch: walletsQuery.refetch,

@@ -35,10 +35,15 @@ export function AddTransactionModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (wallets.length > 0 && !walletId) {
-      setWalletId(wallets[0].id);
+    if (wallets.length > 0) {
+      const preferred = wallets.find((w) => w.pocketType === (type === 'INCOME' ? 'INCOME' : 'EXPENSE'));
+      if (preferred) {
+        setWalletId(preferred.id);
+      } else if (!walletId || !wallets.some((w) => w.id === walletId)) {
+        setWalletId(wallets[0].id);
+      }
     }
-  }, [wallets, walletId]);
+  }, [wallets, type]);
 
   useEffect(() => {
     if (categories.length > 0) {
@@ -138,7 +143,7 @@ export function AddTransactionModal({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-medium text-foreground block mb-1">Dompet / Rekening</label>
+            <label className="text-xs font-medium text-foreground block mb-1">Kantong Pos</label>
             <select
               className="w-full h-10 rounded-lg border border-input bg-background px-3 text-xs focus:ring-2 focus:ring-ring"
               value={walletId}
@@ -147,6 +152,7 @@ export function AddTransactionModal({
             >
               {wallets.map((w) => (
                 <option key={w.id} value={w.id}>
+                  {w.pocketType === 'INCOME' ? '🟢 [Pemasukan] ' : '🔴 [Pengeluaran] '}
                   {w.name}
                 </option>
               ))}

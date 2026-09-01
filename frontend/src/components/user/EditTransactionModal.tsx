@@ -157,6 +157,7 @@ export function EditTransactionModal({
             >
               {wallets.map((w) => (
                 <option key={w.id} value={w.id}>
+                  {w.pocketType === 'INCOME' ? '🟢 [Pemasukan] ' : '🔴 [Pengeluaran] '}
                   {w.name}
                 </option>
               ))}

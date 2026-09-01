@@ -1,5 +1,6 @@
 package com.financialrecord.entity;
 
+import com.financialrecord.entity.enums.PocketType;
 import com.financialrecord.entity.enums.WalletType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,6 +35,18 @@ public class Wallet {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private WalletType type = WalletType.CASH;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pocket_type", length = 20)
+    @Builder.Default
+    private PocketType pocketType = PocketType.EXPENSE;
+
+    @Column(name = "ai_generated")
+    @Builder.Default
+    private Boolean aiGenerated = false;
+
+    @Column(name = "ai_insight", length = 255)
+    private String aiInsight;
 
     @Column(nullable = false, precision = 15, scale = 2)
     @Builder.Default

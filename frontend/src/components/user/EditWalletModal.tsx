@@ -5,7 +5,8 @@ import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useWallets } from '@/hooks/useWallets';
-import { Wallet, WalletType } from '@/types/wallet.types';
+import { Wallet, PocketType } from '@/types/wallet.types';
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 
 export function EditWalletModal({
   isOpen,
@@ -19,14 +20,14 @@ export function EditWalletModal({
   const { updateWallet, isUpdating } = useWallets();
 
   const [name, setName] = useState('');
-  const [type, setType] = useState<WalletType>('BANK');
+  const [pocketType, setPocketType] = useState<PocketType>('EXPENSE');
   const [balance, setBalance] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (wallet) {
       setName(wallet.name);
-      setType(wallet.type);
+      setPocketType(wallet.pocketType || 'EXPENSE');
       setBalance(String(wallet.balance));
       setError(null);
     }
@@ -44,14 +45,16 @@ export function EditWalletModal({
         id: wallet.id,
         data: {
           name: name.trim(),
-          type,
+          type: wallet.type || 'BANK',
+          pocketType,
+          aiInsight: wallet.aiInsight,
           initialBalance: bal,
         },
       });
 
       onClose();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Gagal memperbarui data dompet');
+      setError(err?.response?.data?.message || 'Gagal memperbarui data kantong');
     }
   };
 
@@ -61,10 +64,38 @@ export function EditWalletModal({
     <Dialog
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit Kantong Dompet / Rekening"
-      description={`Ubah rincian informasi dan saldo untuk ${wallet.name}`}
+      title="Edit Kantong Pos Keuangan"
+      description={`Ubah rincian informasi dan nominal saldo untuk ${wallet.name}`}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Pocket Type Toggle */}
+        <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-muted/60">
+          <button
+            type="button"
+            className={`flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${
+              pocketType === 'INCOME'
+                ? 'bg-emerald-500 text-white shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setPocketType('INCOME')}
+          >
+            <ArrowUpRight className="h-4 w-4" />
+            <span>Pos Pemasukan</span>
+          </button>
+          <button
+            type="button"
+            className={`flex items-center justify-center space-x-2 py-2 rounded-lg text-xs font-bold transition-all ${
+              pocketType === 'EXPENSE'
+                ? 'bg-rose-500 text-white shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setPocketType('EXPENSE')}
+          >
+            <ArrowDownRight className="h-4 w-4" />
+            <span>Pos Pengeluaran</span>
+          </button>
+        </div>
+
         {error && (
           <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20">
             {error}
@@ -72,29 +103,15 @@ export function EditWalletModal({
         )}
 
         <Input
-          label="Nama Dompet / Rekening"
+          label="Nama Kantong Pos"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
         />
 
-        <div>
-          <label className="text-xs font-medium text-foreground block mb-1">Tipe Dompet</label>
-          <select
-            className="w-full h-10 rounded-lg border border-input bg-background px-3 text-xs focus:ring-2 focus:ring-ring"
-            value={type}
-            onChange={(e) => setType(e.target.value as WalletType)}
-          >
-            <option value="BANK">Rekening Bank (BCA, Mandiri, BRI, dll)</option>
-            <option value="EWALLET">E-Wallet (GoPay, OVO, ShopeePay, Dana)</option>
-            <option value="CASH">Uang Tunai / Cash Dompet</option>
-            <option value="INVESTMENT">Akun Investasi / Reksadana / Saham</option>
-          </select>
-        </div>
-
         <Input
-          label="Saldo (Rp)"
+          label="Saldo / Nominal Dana (Rp)"
           type="number"
           value={balance}
           onChange={(e) => setBalance(e.target.value)}

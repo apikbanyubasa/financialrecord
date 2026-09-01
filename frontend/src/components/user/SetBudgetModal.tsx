@@ -13,11 +13,15 @@ export function SetBudgetModal({
   onClose,
   currentPeriod,
   initialBudget,
+  presetCategoryId,
+  presetCategoryName,
 }: {
   isOpen: boolean;
   onClose: () => void;
   currentPeriod: string;
   initialBudget?: Budget | null;
+  presetCategoryId?: string;
+  presetCategoryName?: string;
 }) {
   const { setBudget, isSetting } = useBudgets(currentPeriod);
   const { categories } = useCategories('EXPENSE');
@@ -31,6 +35,10 @@ export function SetBudgetModal({
       setCategoryId(initialBudget.categoryId);
       setMonthlyLimit(String(initialBudget.monthlyLimit));
       setError(null);
+    } else if (presetCategoryId) {
+      setCategoryId(presetCategoryId);
+      setMonthlyLimit('');
+      setError(null);
     } else {
       if (categories.length > 0 && !categoryId) {
         setCategoryId(categories[0].id);
@@ -38,7 +46,7 @@ export function SetBudgetModal({
       setMonthlyLimit('');
       setError(null);
     }
-  }, [initialBudget, categories, isOpen]);
+  }, [initialBudget, presetCategoryId, categories, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -66,9 +66,10 @@ export function ReceiptUploadDropzone() {
             setSelectedCategoryId(categories[0].id);
           }
 
-          // Auto-match wallet
+          // Auto-match wallet (prefer EXPENSE pocket)
           if (wallets.length > 0) {
-            setSelectedWalletId(wallets[0].id);
+            const expWal = wallets.find((w) => w.pocketType === 'EXPENSE') || wallets[0];
+            setSelectedWalletId(expWal.id);
           }
         } catch (err: any) {
           setErrorMessage(err?.response?.data?.message || 'Gagal memproses struk dengan AI.');
@@ -226,7 +227,7 @@ export function ReceiptUploadDropzone() {
                 {/* Selectors for Saving */}
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div>
-                    <label className="text-xs font-medium text-foreground block mb-1">Pilih Dompet</label>
+                    <label className="text-xs font-medium text-foreground block mb-1">Pilih Kantong Pos</label>
                     <select
                       className="w-full h-9 rounded-lg border border-input bg-background px-2.5 text-xs focus:ring-1 focus:ring-primary"
                       value={selectedWalletId}

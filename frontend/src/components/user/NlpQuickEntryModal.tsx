@@ -21,7 +21,7 @@ export function NlpQuickEntryModal({
   const { parseNlpBatch, isParsingNlpBatch } = useAi();
   const { createTransactionsBatch, isCreatingBatch } = useTransactions();
   const { categories } = useCategories();
-  const { wallets } = useWallets();
+  const { wallets, refetch: refetchWallets } = useWallets();
 
   const [text, setText] = useState('');
   const [parsedItems, setParsedItems] = useState<TransactionRequest[]>([]);
@@ -36,6 +36,8 @@ export function NlpQuickEntryModal({
 
     try {
       const results = await parseNlpBatch(text.trim());
+      await refetchWallets();
+
       // Default category and wallet resolution
       const sanitized = results.map((item) => {
         let catId = item.categoryId;

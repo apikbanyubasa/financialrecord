@@ -16,8 +16,7 @@ import {
   PiggyBank,
   ArrowUpRight,
   ArrowDownRight,
-  Plus,
-  ScanLine,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -34,22 +33,26 @@ export default function DashboardPage() {
       {/* 4 Core Summary Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Balance */}
-        <Card className="hover:border-primary/40 transition-all">
-          <CardContent className="p-5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">Total Saldo Dompet</p>
-              <h3 className="text-2xl font-black tracking-tight text-foreground mt-1">
-                {formatIDR(summary?.totalBalance)}
-              </h3>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                {summary?.wallets?.length || 0} kantong aktif
-              </p>
-            </div>
-            <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <WalletCards className="h-6 w-6" />
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/wallets">
+          <Card className="hover:border-primary/40 transition-all cursor-pointer group">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                  Total Saldo Kas Bersih →
+                </p>
+                <h3 className="text-2xl font-black tracking-tight text-foreground mt-1">
+                  {formatIDR(summary?.totalBalance)}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Buka Kantong Pos Keuangan
+                </p>
+              </div>
+              <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover:scale-105 transition-transform">
+                <WalletCards className="h-6 w-6" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Total Income */}
         <Card className="hover:border-emerald-500/40 transition-all">
@@ -142,7 +145,7 @@ export default function DashboardPage() {
               <div>
                 <CardTitle className="text-base">Perincian Alokasi Pengeluaran</CardTitle>
                 <CardDescription className="text-xs">
-                  Distribusi pemakaian dana berdasarkan kategori
+                  Distribusi pemakaian dana berdasarkan pos kategori
                 </CardDescription>
               </div>
             </CardHeader>
@@ -153,47 +156,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Active Wallets Grid */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-base text-foreground">Kantong Dana & Rekening</h3>
-          <Link href="/wallets" className="text-xs text-primary font-semibold hover:underline">
-            Kelola Semua Dompet &rarr;
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {summary?.wallets?.map((wallet) => (
-            <div
-              key={wallet.id}
-              className="p-4 rounded-2xl border bg-card/70 hover:border-primary/40 transition-all flex items-center justify-between"
-            >
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {wallet.type}
-                </span>
-                <h4 className="font-bold text-sm text-foreground mt-0.5">{wallet.name}</h4>
-                <p className="text-base font-black text-primary mt-1">{formatIDR(wallet.balance)}</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                <WalletCards className="h-5 w-5" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Recent Transactions Table */}
       <Card>
         <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-base">Transaksi Terbaru</CardTitle>
+            <CardTitle className="text-base">Aktivitas Transaksi Terbaru</CardTitle>
             <CardDescription className="text-xs">
-              10 catatan transaksi pemasukan dan pengeluaran terakhir
+              Catatan pemasukan dan rincian pengeluaran yang baru saja tercatat
             </CardDescription>
           </div>
           <Link href="/transactions">
-            <Button variant="outline" size="sm" className="text-xs">
-              Lihat Riwayat Lengkap
+            <Button variant="outline" size="sm" className="text-xs space-x-1">
+              <span>Buka Kronologi Lengkap</span>
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
         </CardHeader>

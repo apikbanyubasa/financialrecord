@@ -6,9 +6,11 @@ import com.financialrecord.dto.request.TransactionRequest;
 import com.financialrecord.entity.Category;
 import com.financialrecord.entity.Wallet;
 import com.financialrecord.entity.enums.AiFeatureType;
+import com.financialrecord.entity.enums.PocketType;
 import com.financialrecord.entity.enums.TransactionType;
+import com.financialrecord.entity.enums.WalletType;
 import com.financialrecord.repository.CategoryRepository;
-import com.financialrecord.repository.WalletRepository;
+import com.financialrecord.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +34,7 @@ public class AiNlpEntryService {
     private final ObjectMapper objectMapper;
     private final AiMetricsTracker metricsTracker;
     private final CategoryRepository categoryRepository;
-    private final WalletRepository walletRepository;
+    private final WalletService walletService;
 
     @Value("${app.ai.gemini.api-key:}")
     private String geminiApiKey;
@@ -44,7 +46,6 @@ public class AiNlpEntryService {
         long startTime = System.currentTimeMillis();
 
         List<Category> categories = categoryRepository.findAllByUserIdOrSystemDefault(userId);
-        List<Wallet> wallets = walletRepository.findByUserIdOrderByCreatedAtAsc(userId);
 
         // Split text into individual transaction clauses/lines
         List<String> rawItems = splitIntoTransactionClauses(naturalText);
@@ -54,14 +55,14 @@ public class AiNlpEntryService {
             String itemClean = rawItem.trim().replaceAll("^['\"\\s]+|['\"\\s]+$", "");
             if (itemClean.isEmpty()) continue;
 
-            TransactionRequest req = simulateNlpParseSingle(itemClean, categories, wallets);
+            TransactionRequest req = simulateNlpParseSingle(userId, itemClean, categories);
             if (req != null) {
                 parsedList.add(req);
             }
         }
 
         if (parsedList.isEmpty()) {
-            TransactionRequest fallback = simulateNlpParseSingle(naturalText, categories, wallets);
+            TransactionRequest fallback = simulateNlpParseSingle(userId, naturalText, categories);
             if (fallback != null) parsedList.add(fallback);
         }
 
@@ -115,24 +116,26 @@ public class AiNlpEntryService {
     }
 
     /**
-     * High-Precision Single Item Parser
+     * High-Precision Single Item Parser with Smart AI Pocket Resolution
      */
-    private TransactionRequest simulateNlpParseSingle(String text, List<Category> categories, List<Wallet> wallets) {
+    private TransactionRequest simulateNlpParseSingle(UUID userId, String text, List<Category> categories) {
         String lower = text.toLowerCase().trim();
 
         // 1. Determine Transaction Type (INCOME vs EXPENSE)
         boolean isIncome = lower.contains("gaji") || lower.contains("gajian") || lower.contains("dapat uang") ||
                 lower.contains("dapat gajian") || lower.contains("terima uang") || lower.contains("bonus") ||
                 lower.contains("thr") || lower.contains("freelance") || lower.contains("transfer masuk") ||
-                lower.contains("tf masuk") || lower.contains("dividen") || lower.contains("pemasukan");
+                lower.contains("tf masuk") || lower.contains("dividen") || lower.contains("pemasukan") ||
+                lower.contains("jual") || lower.contains("jualan");
         TransactionType type = isIncome ? TransactionType.INCOME : TransactionType.EXPENSE;
+        PocketType pocketType = isIncome ? PocketType.INCOME : PocketType.EXPENSE;
 
         // 2. Parse Nominal accurately
         BigDecimal amount = extractAmount(lower);
 
-        // 3. Match Target Wallet (ensure non-null)
-        Wallet selectedWallet = matchWallet(lower, wallets);
-        UUID walletId = (selectedWallet != null) ? selectedWallet.getId() : (wallets.isEmpty() ? null : wallets.get(0).getId());
+        // 3. Smart AI Pocket Detection and Auto-Creation
+        Wallet selectedWallet = resolveSmartWallet(userId, lower, type, pocketType);
+        UUID walletId = (selectedWallet != null) ? selectedWallet.getId() : null;
 
         // 4. Match Category (ensure non-null)
         Category selectedCategory = matchCategory(lower, type, categories);
@@ -150,6 +153,66 @@ public class AiNlpEntryService {
                 .transactionDate(LocalDateTime.now())
                 .isRecurring(false)
                 .build();
+    }
+
+    private Wallet resolveSmartWallet(UUID userId, String lower, TransactionType type, PocketType pocketType) {
+        String detectedWalletName;
+        WalletType walletType = WalletType.BANK;
+        String aiInsight;
+
+        if (type == TransactionType.INCOME) {
+            if (lower.contains("gaji") || lower.contains("gajian") || lower.contains("salary")) {
+                detectedWalletName = "Kantong Gaji Pokok";
+                aiInsight = "Dideteksi AI dari penerimaan gaji rutin bulanan";
+            } else if (lower.contains("freelance") || lower.contains("side") || lower.contains("proyek") || lower.contains("project")) {
+                detectedWalletName = "Kantong Freelance & Side Job";
+                aiInsight = "Dideteksi AI dari pendapatan pekerjaan sampingan/freelance";
+            } else if (lower.contains("bisnis") || lower.contains("jualan") || lower.contains("omset") || lower.contains("toko")) {
+                detectedWalletName = "Kantong Bisnis & Penjualan";
+                aiInsight = "Dideteksi AI dari omset hasil usaha/bisnis";
+            } else if (lower.contains("dividen") || lower.contains("investasi") || lower.contains("saham") || lower.contains("reksadana")) {
+                detectedWalletName = "Kantong Investasi & Dividen";
+                walletType = WalletType.INVESTMENT;
+                aiInsight = "Dideteksi AI dari imbal hasil investasi & dividen";
+            } else if (lower.contains("bonus") || lower.contains("thr") || lower.contains("hadiah") || lower.contains("tip")) {
+                detectedWalletName = "Kantong Bonus & Tunjangan";
+                aiInsight = "Dideteksi AI dari penerimaan bonus/hadiah";
+            } else {
+                detectedWalletName = "Kantong Pemasukan Lainnya";
+                aiInsight = "Dideteksi AI untuk pos penerimaan dana";
+            }
+        } else {
+            if (lower.contains("kopi") || lower.contains("nongkrong") || lower.contains("cafe") || lower.contains("kafe") || lower.contains("snack")) {
+                detectedWalletName = "Kantong Bocor Halus / Jajan & Kopi";
+                walletType = WalletType.CASH;
+                aiInsight = "Dideteksi AI dari pos jajan santai & kopi";
+            } else if (lower.contains("makan") || lower.contains("nasi") || lower.contains("warung") || lower.contains("resto") || lower.contains("ayam") || lower.contains("bakso") || lower.contains("mie") || lower.contains("sarapan")) {
+                detectedWalletName = "Kantong Makanan & Minuman";
+                walletType = WalletType.CASH;
+                aiInsight = "Dideteksi AI dari pos konsumsi pangan harian";
+            } else if (lower.contains("bensin") || lower.contains("pertalite") || lower.contains("pertamax") || lower.contains("ojol") || lower.contains("gojek") || lower.contains("grab") || lower.contains("parkir") || lower.contains("tol")) {
+                detectedWalletName = "Kantong Transportasi";
+                aiInsight = "Dideteksi AI dari biaya mobilitas & perjalanan";
+            } else if (lower.contains("listrik") || lower.contains("wifi") || lower.contains("indihome") || lower.contains("air") || lower.contains("pdam") || lower.contains("tagihan") || lower.contains("pulsa") || lower.contains("kuota")) {
+                detectedWalletName = "Kantong Tagihan & Utilitas";
+                aiInsight = "Dideteksi AI dari pembayaran tagihan rutin";
+            } else if (lower.contains("belanja") || lower.contains("indomaret") || lower.contains("alfamart") || lower.contains("supermarket") || lower.contains("tokopedia") || lower.contains("shopee") || lower.contains("baju")) {
+                detectedWalletName = "Kantong Belanja Kebutuhan";
+                aiInsight = "Dideteksi AI dari pos belanja kebutuhan rumah & pribadi";
+            } else if (lower.contains("bioskop") || lower.contains("nonton") || lower.contains("game") || lower.contains("liburan") || lower.contains("wisata")) {
+                detectedWalletName = "Kantong Hiburan & Hobi";
+                aiInsight = "Dideteksi AI dari pos rekreasi & hiburan";
+            } else if (lower.contains("obat") || lower.contains("dokter") || lower.contains("apotek") || lower.contains("klinik") || lower.contains("rs") || lower.contains("vitamin")) {
+                detectedWalletName = "Kantong Kesehatan & Medis";
+                aiInsight = "Dideteksi AI dari pos kesehatan & pengobatan";
+            } else {
+                detectedWalletName = "Kantong Pengeluaran Lainnya";
+                walletType = WalletType.CASH;
+                aiInsight = "Dideteksi AI untuk pos pengeluaran harian";
+            }
+        }
+
+        return walletService.getOrCreateWalletForAi(userId, detectedWalletName, pocketType, walletType, aiInsight);
     }
 
     private BigDecimal extractAmount(String lower) {
@@ -195,30 +258,6 @@ public class AiNlpEntryService {
         }
 
         return new BigDecimal("10000.00");
-    }
-
-    private Wallet matchWallet(String lower, List<Wallet> wallets) {
-        if (wallets == null || wallets.isEmpty()) return null;
-
-        if (lower.contains("cash") || lower.contains("tunai") || lower.contains("dompet")) {
-            return wallets.stream().filter(w -> w.getType().name().equals("CASH") || w.getName().toLowerCase().contains("cash")).findFirst().orElse(wallets.get(0));
-        }
-        if (lower.contains("bca")) {
-            return wallets.stream().filter(w -> w.getName().toLowerCase().contains("bca")).findFirst().orElse(wallets.get(0));
-        }
-        if (lower.contains("mandiri")) {
-            return wallets.stream().filter(w -> w.getName().toLowerCase().contains("mandiri")).findFirst().orElse(wallets.get(0));
-        }
-        if (lower.contains("gopay") || lower.contains("ovo") || lower.contains("shopee") || lower.contains("dana")) {
-            return wallets.stream().filter(w -> w.getType().name().equals("EWALLET") || w.getName().toLowerCase().contains("gopay") || w.getName().toLowerCase().contains("ovo")).findFirst().orElse(wallets.get(0));
-        }
-
-        // Default to Bank for salary/incomes, Cash for small expenses
-        if (lower.contains("gaji") || lower.contains("gajian")) {
-            return wallets.stream().filter(w -> w.getType().name().equals("BANK")).findFirst().orElse(wallets.get(0));
-        }
-
-        return wallets.get(0);
     }
 
     private Category matchCategory(String lower, TransactionType type, List<Category> categories) {
