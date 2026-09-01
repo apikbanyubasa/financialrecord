@@ -1,0 +1,17 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Maven Wrapper Shell Script
+# ----------------------------------------------------------------------------
+
+MAVEN_HOME="$HOME/.m2/wrapper/dists/apache-maven-3.9.8"
+if [ ! -d "$MAVEN_HOME" ]; then
+    echo "Downloading Apache Maven..."
+    mkdir -p /tmp/mvn-tmp
+    curl -sSL "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.8/apache-maven-3.9.8-bin.zip" -o /tmp/mvn-tmp/mvn.zip
+    unzip -q /tmp/mvn-tmp/mvn.zip -d /tmp/mvn-tmp/
+    mkdir -p "$MAVEN_HOME"
+    cp -r /tmp/mvn-tmp/apache-maven-3.9.8/* "$MAVEN_HOME/"
+    rm -rf /tmp/mvn-tmp
+fi
+
+exec "$MAVEN_HOME/bin/mvn" "$@"
