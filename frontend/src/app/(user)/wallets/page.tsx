@@ -3,8 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useBudgets } from '@/hooks/useBudgets';
-import { formatIDR, formatTimeOnly } from '@/lib/formatters';
-import { Card, CardContent } from '@/components/ui/Card';
+import { formatIDR, formatTimeOnly, formatMonthYear } from '@/lib/formatters';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Progress } from '@/components/ui/Progress';
@@ -39,11 +39,15 @@ import {
   CheckCircle2,
   Calendar,
   ChevronRight,
+  ChevronLeft,
   AlertTriangle,
   SlidersHorizontal,
   PieChart,
   Lightbulb,
   ShieldCheck,
+  CalendarDays,
+  Globe,
+  BarChart3,
 } from 'lucide-react';
 
 const iconComponents: Record<string, any> = {
@@ -64,6 +68,8 @@ const iconComponents: Record<string, any> = {
   Wallet: WalletIcon,
 };
 
+type PeriodMode = 'MONTHLY' | 'YEARLY' | 'ALL_TIME';
+
 interface TransactionPocket {
   id: string;
   name: string;
@@ -77,10 +83,24 @@ interface TransactionPocket {
   aiInsight: string;
 }
 
+const MONTH_NAMES = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
 export default function WalletsPage() {
-  const currentPeriod = useMemo(() => new Date().toISOString().slice(0, 7), []);
-  const { transactions, summary, isLoading: isTxLoading } = useTransactions({ size: 500 });
-  const { budgets, isLoading: isBudgetsLoading } = useBudgets(currentPeriod);
+  const currentMonthStr = useMemo(() => new Date().toISOString().slice(0, 7), []); // "YYYY-MM"
+  const currentYearStr = useMemo(() => String(new Date().getFullYear()), []); // "YYYY"
+
+  // --- Period Filter State ---
+  const [periodMode, setPeriodMode] = useState<PeriodMode>('MONTHLY');
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
+  const [selectedYear, setSelectedYear] = useState<string>(currentYearStr);
+
+  const { transactions, isLoading: isTxLoading } = useTransactions({ size: 1000 });
+  const { budgets, isLoading: isBudgetsLoading } = useBudgets(
+    periodMode === 'MONTHLY' ? selectedMonth : currentMonthStr
+  );
 
   const [activeTab, setActiveTab] = useState<PocketType>('INCOME');
   const [isNlpModalOpen, setIsNlpModalOpen] = useState(false);
@@ -91,7 +111,52 @@ export default function WalletsPage() {
   const [selectedPocketForBudget, setSelectedPocketForBudget] = useState<{ id: string; name: string } | null>(null);
   const [selectedBudgetForEdit, setSelectedBudgetForEdit] = useState<Budget | null>(null);
 
-  // Group real transactions into active Pockets dynamically
+  // --- Date Navigation Handlers ---
+  const handlePrevMonth = () => {
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const date = new Date(year, month - 2, 1);
+    setSelectedMonth(date.toISOString().slice(0, 7));
+  };
+
+  const handleNextMonth = () => {
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const date = new Date(year, month, 1);
+    setSelectedMonth(date.toISOString().slice(0, 7));
+  };
+
+  const handleCurrentMonth = () => {
+    setSelectedMonth(currentMonthStr);
+  };
+
+  const handlePrevYear = () => {
+    setSelectedYear((y) => String(Number(y) - 1));
+  };
+
+  const handleNextYear = () => {
+    setSelectedYear((y) => String(Number(y) + 1));
+  };
+
+  const handleCurrentYear = () => {
+    setSelectedYear(currentYearStr);
+  };
+
+  // --- Filter Transactions Strictly by Period ---
+  const filteredTransactions = useMemo(() => {
+    if (periodMode === 'ALL_TIME') return transactions;
+    if (periodMode === 'YEARLY') {
+      return transactions.filter((tx) => {
+        if (!tx.transactionDate) return false;
+        return tx.transactionDate.startsWith(selectedYear);
+      });
+    }
+    // MONTHLY
+    return transactions.filter((tx) => {
+      if (!tx.transactionDate) return false;
+      return tx.transactionDate.startsWith(selectedMonth);
+    });
+  }, [transactions, periodMode, selectedMonth, selectedYear]);
+
+  // --- Group Filtered Transactions into Active Pockets & Totals ---
   const { incomePockets, expensePockets, totalIncome, totalExpense, netBalance } = useMemo(() => {
     const incomeMap = new Map<string, TransactionPocket>();
     const expenseMap = new Map<string, TransactionPocket>();
@@ -99,7 +164,7 @@ export default function WalletsPage() {
     let sumIncome = 0;
     let sumExpense = 0;
 
-    transactions.forEach((tx) => {
+    filteredTransactions.forEach((tx) => {
       const isIncome = tx.type === 'INCOME';
       const catKey = tx.categoryId || tx.categoryName || 'Umum';
       const catName = tx.categoryName || 'Umum';
@@ -118,7 +183,7 @@ export default function WalletsPage() {
             totalAmount: 0,
             transactionCount: 0,
             transactions: [],
-            aiInsight: `Dideteksi AI dari transaksi penerimaan ${catName}`,
+            aiInsight: `Dideteksi AI dari penerimaan ${catName}`,
           });
         }
         const p = incomeMap.get(catKey)!;
@@ -154,13 +219,51 @@ export default function WalletsPage() {
     return {
       incomePockets: incList,
       expensePockets: expList,
-      totalIncome: sumIncome || summary?.totalIncomeThisMonth || 0,
-      totalExpense: sumExpense || summary?.totalExpenseThisMonth || 0,
-      netBalance: (sumIncome || summary?.totalIncomeThisMonth || 0) - (sumExpense || summary?.totalExpenseThisMonth || 0),
+      totalIncome: sumIncome,
+      totalExpense: sumExpense,
+      netBalance: sumIncome - sumExpense,
     };
-  }, [transactions, summary]);
+  }, [filteredTransactions]);
 
-  // Overbudget and AI Recommendation Analysis
+  // --- Monthly Breakdown for Yearly View ---
+  const yearlyMonthlyBreakdown = useMemo(() => {
+    if (periodMode !== 'YEARLY') return [];
+
+    const breakdown = Array.from({ length: 12 }, (_, i) => {
+      const monthIdx = String(i + 1).padStart(2, '0');
+      const prefix = `${selectedYear}-${monthIdx}`;
+      return {
+        monthKey: prefix,
+        monthName: MONTH_NAMES[i],
+        shortName: MONTH_NAMES[i].slice(0, 3),
+        totalIncome: 0,
+        totalExpense: 0,
+        net: 0,
+        count: 0,
+      };
+    });
+
+    transactions.forEach((tx) => {
+      if (!tx.transactionDate || !tx.transactionDate.startsWith(selectedYear)) return;
+      const monthPart = tx.transactionDate.slice(5, 7);
+      const monthNum = parseInt(monthPart, 10);
+      if (monthNum >= 1 && monthNum <= 12) {
+        const item = breakdown[monthNum - 1];
+        const amt = Number(tx.amount) || 0;
+        if (tx.type === 'INCOME') {
+          item.totalIncome += amt;
+        } else {
+          item.totalExpense += amt;
+        }
+        item.net = item.totalIncome - item.totalExpense;
+        item.count += 1;
+      }
+    });
+
+    return breakdown;
+  }, [transactions, periodMode, selectedYear]);
+
+  // --- Overbudget Analysis ---
   const { overbudgetPockets, warningPockets, safePockets } = useMemo(() => {
     const over: { pocket: TransactionPocket; budget: Budget; overAmount: number; pct: number }[] = [];
     const warn: { pocket: TransactionPocket; budget: Budget; pct: number }[] = [];
@@ -171,24 +274,26 @@ export default function WalletsPage() {
         (b) => b.categoryId === pocket.id || b.categoryName.toLowerCase() === pocket.categoryName.toLowerCase()
       );
       if (budget && budget.monthlyLimit > 0) {
-        const pct = (pocket.totalAmount / budget.monthlyLimit) * 100;
-        if (pocket.totalAmount > budget.monthlyLimit) {
+        // In yearly mode, compare against 12 * limit or direct monthly
+        const effectiveLimit = periodMode === 'YEARLY' ? budget.monthlyLimit * 12 : budget.monthlyLimit;
+        const pct = (pocket.totalAmount / effectiveLimit) * 100;
+        if (pocket.totalAmount > effectiveLimit) {
           over.push({
             pocket,
             budget,
-            overAmount: pocket.totalAmount - budget.monthlyLimit,
+            overAmount: pocket.totalAmount - effectiveLimit,
             pct,
           });
         } else if (pct >= 80) {
           warn.push({ pocket, budget, pct });
         } else {
-          safe.push({ pocket, budget, remaining: budget.monthlyLimit - pocket.totalAmount });
+          safe.push({ pocket, budget, remaining: effectiveLimit - pocket.totalAmount });
         }
       }
     });
 
     return { overbudgetPockets: over, warningPockets: warn, safePockets: safe };
-  }, [expensePockets, budgets]);
+  }, [expensePockets, budgets, periodMode]);
 
   const displayedPockets = activeTab === 'INCOME' ? incomePockets : expensePockets;
 
@@ -206,12 +311,20 @@ export default function WalletsPage() {
     return isIncome ? <Briefcase className="h-5 w-5" /> : <ShoppingBag className="h-5 w-5" />;
   };
 
+  const currentPeriodDisplay = useMemo(() => {
+    if (periodMode === 'ALL_TIME') return 'Semua Waktu';
+    if (periodMode === 'YEARLY') return `Tahun ${selectedYear}`;
+    return formatMonthYear(selectedMonth);
+  }, [periodMode, selectedMonth, selectedYear]);
+
   const isLoading = isTxLoading || isBudgetsLoading;
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* ========================================================= */}
+      {/* PAGE HEADER & PERIOD CONTROLLER TOOLBAR */}
+      {/* ========================================================= */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <h2 className="text-xl font-bold tracking-tight text-foreground">Kantong Pos Keuangan</h2>
@@ -223,9 +336,149 @@ export default function WalletsPage() {
             Pos pemasukan & pengeluaran yang otomatis terkelompok dari riwayat transaksi AI beserta kontrol limit target
           </p>
         </div>
+
+        {/* --- Period Control Box --- */}
+        <div className="flex flex-wrap items-center gap-2.5 p-2 rounded-2xl bg-card border border-border/80 shadow-sm">
+          {/* Mode Switcher Buttons */}
+          <div className="flex items-center p-1 rounded-xl bg-muted/60 border border-border/40 gap-1">
+            <button
+              onClick={() => setPeriodMode('MONTHLY')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                periodMode === 'MONTHLY'
+                  ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Bulanan</span>
+            </button>
+
+            <button
+              onClick={() => setPeriodMode('YEARLY')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                periodMode === 'YEARLY'
+                  ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              <span>Tahunan</span>
+            </button>
+
+            <button
+              onClick={() => setPeriodMode('ALL_TIME')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                periodMode === 'ALL_TIME'
+                  ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Globe className="h-3.5 w-3.5" />
+              <span>Semua</span>
+            </button>
+          </div>
+
+          {/* Controls for Monthly Mode */}
+          {periodMode === 'MONTHLY' && (
+            <div className="flex items-center space-x-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={handlePrevMonth}
+                title="Bulan Sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-background border border-input text-xs font-bold">
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => e.target.value && setSelectedMonth(e.target.value)}
+                  className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer text-foreground"
+                />
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={handleNextMonth}
+                title="Bulan Berikutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+
+              {selectedMonth !== currentMonthStr && (
+                <button
+                  onClick={handleCurrentMonth}
+                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                >
+                  Bulan Ini
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Controls for Yearly Mode */}
+          {periodMode === 'YEARLY' && (
+            <div className="flex items-center space-x-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={handlePrevYear}
+                title="Tahun Sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="h-8 rounded-xl border border-input bg-background px-2.5 text-xs font-bold focus:ring-1 focus:ring-primary cursor-pointer"
+              >
+                {[2027, 2026, 2025, 2024, 2023, 2022].map((yr) => (
+                  <option key={yr} value={String(yr)}>
+                    Tahun {yr}
+                  </option>
+                ))}
+              </select>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={handleNextYear}
+                title="Tahun Berikutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+
+              {selectedYear !== currentYearStr && (
+                <button
+                  onClick={handleCurrentYear}
+                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                >
+                  Tahun Ini
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Controls for All Time */}
+          {periodMode === 'ALL_TIME' && (
+            <span className="text-[11px] font-medium text-muted-foreground px-2">
+              Akumulasi seluruh riwayat transaksi
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Metric Cards Summary */}
+      {/* ========================================================= */}
+      {/* 3 METRIC CARDS SUMMARY (PERIOD-AWARE) */}
+      {/* ========================================================= */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total Income Pockets */}
         <Card
@@ -238,7 +491,7 @@ export default function WalletsPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center space-x-1">
                 <ArrowUpRight className="h-4 w-4" />
-                <span>Total Dana Pemasukan</span>
+                <span>Pemasukan ({currentPeriodDisplay})</span>
               </span>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                 {incomePockets.length} Pos Aktif
@@ -248,7 +501,7 @@ export default function WalletsPage() {
               {formatIDR(totalIncome)}
             </h3>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Akumulasi sumber penerimaan yang telah diproses
+              Akumulasi sumber penerimaan di periode {currentPeriodDisplay}
             </p>
           </CardContent>
         </Card>
@@ -264,7 +517,7 @@ export default function WalletsPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 flex items-center space-x-1">
                 <ArrowDownRight className="h-4 w-4" />
-                <span>Total Alokasi Pengeluaran</span>
+                <span>Pengeluaran ({currentPeriodDisplay})</span>
               </span>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400">
                 {expensePockets.length} Pos Aktif
@@ -274,7 +527,7 @@ export default function WalletsPage() {
               {formatIDR(totalExpense)}
             </h3>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Akumulasi belanja & pos pengeluaran yang terpakai
+              Akumulasi belanja & pos pengeluaran di periode {currentPeriodDisplay}
             </p>
           </CardContent>
         </Card>
@@ -285,7 +538,7 @@ export default function WalletsPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground flex items-center space-x-1">
                 <Layers className="h-4 w-4 text-primary" />
-                <span>Total Arus Kas Terproses</span>
+                <span>Arus Kas Bersih ({currentPeriodDisplay})</span>
               </span>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
                 {incomePockets.length + expensePockets.length} Total Pos
@@ -295,13 +548,88 @@ export default function WalletsPage() {
               {formatIDR(netBalance)}
             </h3>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Selisih penerimaan vs pengeluaran terhitung
+              Selisih penerimaan vs pengeluaran di {currentPeriodDisplay}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* AI Smart Overbudget Alert & Allocation Recommendations */}
+      {/* ========================================================= */}
+      {/* YEARLY MONTHLY BREAKDOWN OVERVIEW (WHEN IN YEARLY MODE) */}
+      {/* ========================================================= */}
+      {periodMode === 'YEARLY' && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card">
+          <CardHeader className="pb-3 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <BarChart3 className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm">Rincian Arus Kas Per Bulan (Tahun {selectedYear})</CardTitle>
+              </div>
+              <span className="text-xs text-muted-foreground font-semibold">
+                Klik bulan untuk membuka tampilan bulanan
+              </span>
+            </div>
+            <CardDescription className="text-xs">
+              Perbandingan total pemasukan dan pengeluaran pada setiap bulan di tahun {selectedYear}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {yearlyMonthlyBreakdown.map((m) => {
+                const hasActivity = m.count > 0;
+                return (
+                  <div
+                    key={m.monthKey}
+                    onClick={() => {
+                      setSelectedMonth(m.monthKey);
+                      setPeriodMode('MONTHLY');
+                    }}
+                    className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                      hasActivity
+                        ? 'bg-card hover:border-primary/50 hover:shadow-sm border-border/80'
+                        : 'bg-muted/30 border-dashed border-border/60 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-foreground">{m.monthName}</span>
+                      {hasActivity && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-muted text-muted-foreground">
+                          {m.count} tx
+                        </span>
+                      )}
+                    </div>
+
+                    {hasActivity ? (
+                      <div className="space-y-1 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Masuk:</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatIDR(m.totalIncome)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-rose-600 dark:text-rose-400 font-semibold">Keluar:</span>
+                          <span className="font-bold text-rose-600 dark:text-rose-400">{formatIDR(m.totalExpense)}</span>
+                        </div>
+                        <div className="flex justify-between pt-1 border-t border-border/40 font-black">
+                          <span className="text-muted-foreground">Net:</span>
+                          <span className={m.net >= 0 ? 'text-primary' : 'text-rose-500'}>
+                            {formatIDR(m.net)}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground italic">Belum ada transaksi</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ========================================================= */}
+      {/* AI OVERBUDGET ALERT (PERIOD-AWARE) */}
+      {/* ========================================================= */}
       {activeTab === 'EXPENSE' && overbudgetPockets.length > 0 && (
         <div className="p-5 rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-transparent space-y-4 shadow-sm animate-in fade-in duration-300">
           <div className="flex items-start justify-between">
@@ -311,10 +639,10 @@ export default function WalletsPage() {
               </div>
               <div>
                 <h4 className="font-bold text-sm text-rose-600 dark:text-rose-400 flex items-center space-x-1.5">
-                  <span>Peringatan: {overbudgetPockets.length} Pos Pengeluaran Melebihi Target Limit!</span>
+                  <span>Peringatan: {overbudgetPockets.length} Pos Pengeluaran Melebihi Target Limit ({currentPeriodDisplay})!</span>
                 </h4>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Pengeluaran aktual telah melampaui alokasi batas bulanan yang direncanakan.
+                  Pengeluaran aktual telah melampaui alokasi batas yang direncanakan untuk periode ini.
                 </p>
               </div>
             </div>
@@ -335,7 +663,7 @@ export default function WalletsPage() {
                   <div className="text-[11px] text-muted-foreground flex items-center space-x-2 mt-0.5">
                     <span>Realisasi: <strong className="text-rose-600">{formatIDR(pocket.totalAmount)}</strong></span>
                     <span>•</span>
-                    <span>Limit: {formatIDR(budget.monthlyLimit)}</span>
+                    <span>Limit: {formatIDR(periodMode === 'YEARLY' ? budget.monthlyLimit * 12 : budget.monthlyLimit)}</span>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
@@ -347,41 +675,12 @@ export default function WalletsPage() {
               </div>
             ))}
           </div>
-
-          {/* AI Smart Recommendation Box */}
-          <div className="p-4 rounded-xl bg-background/90 border border-primary/20 space-y-2.5">
-            <div className="flex items-center space-x-2 text-xs font-bold text-primary">
-              <Lightbulb className="h-4 w-4" />
-              <span>Rekomendasi Penyesuaian AI untuk Menyeimbangkan Arus Kas:</span>
-            </div>
-            <ul className="space-y-1.5 text-xs text-muted-foreground leading-relaxed pl-1">
-              <li className="flex items-start space-x-2">
-                <span className="text-rose-500 font-bold">•</span>
-                <span>
-                  <strong>Minimalkan Pos Non-Esensial / Jajan:</strong> Tekan pengeluaran pada pos <em>Jajan, Kopi (Bocor Halus)</em>, dan <em>Gaya Hidup/Hiburan</em> sebesar <strong>30% - 50%</strong> hingga akhir bulan.
-                </span>
-              </li>
-              {safePockets.length > 0 && (
-                <li className="flex items-start space-x-2">
-                  <span className="text-emerald-500 font-bold">•</span>
-                  <span>
-                    <strong>Realokasi dari Kantong Aman:</strong> Anda memiliki sisa kuota aman pada{' '}
-                    <strong>{safePockets[0].pocket.name}</strong> (tersisa {formatIDR(safePockets[0].remaining)}). Anda dapat mengalihkan sebagian kuotanya untuk menutup kelebihan ini.
-                  </span>
-                </li>
-              )}
-              <li className="flex items-start space-x-2">
-                <span className="text-primary font-bold">•</span>
-                <span>
-                  <strong>Evaluasi Ulang Limit:</strong> Jika pengeluaran pada pos pokok ini memang bersifat mendesak, sesuaikan batas limit bulanan melalui tombol <em>Edit Limit</em> pada kartu kantong.
-                </span>
-              </li>
-            </ul>
-          </div>
         </div>
       )}
 
-      {/* Tab Navigation: Pemasukan vs Pengeluaran */}
+      {/* ========================================================= */}
+      {/* TAB NAVIGATION: PEMASUKAN VS PENGELUARAN */}
+      {/* ========================================================= */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center space-x-2">
           <button
@@ -433,7 +732,9 @@ export default function WalletsPage() {
         )}
       </div>
 
-      {/* Wallets Grid / Empty States */}
+      {/* ========================================================= */}
+      {/* WALLETS GRID / EMPTY STATES */}
+      {/* ========================================================= */}
       {isLoading ? (
         <LoadingSpinner text="Memuat pos transaksi & data budget..." className="h-64" />
       ) : displayedPockets.length === 0 ? (
@@ -449,12 +750,12 @@ export default function WalletsPage() {
 
           <div className="max-w-md mx-auto space-y-1.5">
             <h3 className="text-base font-bold text-foreground">
-              Belum Ada Kantong {activeTab === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'} yang Terproses
+              Belum Ada Kantong {activeTab === 'INCOME' ? 'Pemasukan' : 'Pengeluaran'} di Periode {currentPeriodDisplay}
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
               {activeTab === 'INCOME'
-                ? 'Catat transaksi penerimaan seperti gaji bulanan, transfer freelance, atau keuntungan bisnis menggunakan AI. AI akan mendeteksi dan membuat pos pemasukan Anda secara otomatis.'
-                : 'Catat pengeluaran belanja harian, kopi, makan siang, atau tagihan bulanan menggunakan AI. AI akan mengelompokkan pos pengeluaran Anda secara otomatis.'}
+                ? `Tidak ditemukan transaksi penerimaan (seperti gaji, freelance, atau bonus) pada periode ${currentPeriodDisplay}. Catat penerimaan baru dengan AI.`
+                : `Tidak ditemukan transaksi pengeluaran (seperti belanja, kopi, makan, atau tagihan) pada periode ${currentPeriodDisplay}. Catat pengeluaran baru dengan AI.`}
             </p>
           </div>
 
@@ -469,12 +770,17 @@ export default function WalletsPage() {
               <span>Input Transaksi dengan AI</span>
             </Button>
 
-            <Link href="/transactions/scan">
-              <Button variant="outline" size="sm" className="space-x-1.5">
-                <Camera className="h-3.5 w-3.5" />
-                <span>Scan Struk</span>
+            {periodMode !== 'ALL_TIME' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPeriodMode('ALL_TIME')}
+                className="space-x-1.5"
+              >
+                <Globe className="h-3.5 w-3.5" />
+                <span>Lihat Semua Waktu</span>
               </Button>
-            </Link>
+            )}
           </div>
         </Card>
       ) : (
@@ -491,7 +797,8 @@ export default function WalletsPage() {
                 )
               : null;
 
-            const monthlyLimit = matchingBudget?.monthlyLimit || 0;
+            const baseLimit = matchingBudget?.monthlyLimit || 0;
+            const monthlyLimit = periodMode === 'YEARLY' ? baseLimit * 12 : baseLimit;
             const percentageUsed = monthlyLimit > 0 ? (pocket.totalAmount / monthlyLimit) * 100 : 0;
             const isOverBudget = monthlyLimit > 0 && pocket.totalAmount > monthlyLimit;
             const isNearLimit = monthlyLimit > 0 && percentageUsed >= 80 && !isOverBudget;
@@ -573,7 +880,7 @@ export default function WalletsPage() {
                   {pocket.aiInsight && (
                     <div className="p-2.5 rounded-xl bg-muted/40 border border-border/40 text-[11px] text-muted-foreground leading-relaxed flex items-start space-x-1.5">
                       <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                      <span>{pocket.aiInsight}</span>
+                      <span>{pocket.aiInsight} ({currentPeriodDisplay})</span>
                     </div>
                   )}
                 </div>
@@ -582,7 +889,7 @@ export default function WalletsPage() {
                 <div className="pt-3 border-t border-border/60 space-y-3">
                   <div className="flex items-baseline justify-between">
                     <span className="text-[11px] text-muted-foreground font-medium">
-                      {isIncomeTab ? 'Total Dana Terkumpul:' : 'Total Dana Terpakai:'}
+                      {isIncomeTab ? 'Terkumpul di Periode Ini:' : 'Terpakai di Periode Ini:'}
                     </span>
                     <span className="text-[10px] font-bold text-foreground px-2 py-0.5 rounded-full bg-muted">
                       {pocket.transactionCount} Transaksi
@@ -627,7 +934,7 @@ export default function WalletsPage() {
                           <Progress value={pocket.totalAmount} max={monthlyLimit} indicatorColor={progressColor} />
                           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                             <span>
-                              Limit: <strong>{formatIDR(monthlyLimit)}</strong>
+                              Limit ({periodMode === 'YEARLY' ? '12 Bulan' : 'Bulan Ini'}): <strong>{formatIDR(monthlyLimit)}</strong>
                             </span>
                             <span>
                               {isOverBudget ? (
@@ -663,7 +970,7 @@ export default function WalletsPage() {
                       className="w-full flex items-center justify-between text-xs font-semibold text-muted-foreground hover:text-foreground py-1 transition-colors"
                     >
                       <span>
-                        {isExpanded ? 'Sembunyikan Rincian' : `Lihat ${pocket.transactions.length} Transaksi`}
+                        {isExpanded ? 'Sembunyikan Rincian' : `Lihat ${pocket.transactions.length} Transaksi (${currentPeriodDisplay})`}
                       </span>
                       <ChevronRight
                         className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -708,7 +1015,9 @@ export default function WalletsPage() {
         </div>
       )}
 
-      {/* Set Budget Modal */}
+      {/* ========================================================= */}
+      {/* MODALS */}
+      {/* ========================================================= */}
       <SetBudgetModal
         isOpen={isBudgetModalOpen}
         onClose={() => {
@@ -716,13 +1025,12 @@ export default function WalletsPage() {
           setSelectedPocketForBudget(null);
           setSelectedBudgetForEdit(null);
         }}
-        currentPeriod={currentPeriod}
+        currentPeriod={selectedMonth}
         presetCategoryId={selectedPocketForBudget?.id}
         presetCategoryName={selectedPocketForBudget?.name}
         initialBudget={selectedBudgetForEdit}
       />
 
-      {/* NLP Quick Entry Modal */}
       <NlpQuickEntryModal
         isOpen={isNlpModalOpen}
         onClose={() => setIsNlpModalOpen(false)}

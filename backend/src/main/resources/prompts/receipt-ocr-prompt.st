@@ -7,7 +7,7 @@ Always output strictly valid JSON matching this schema:
   "merchant": "string (name of store/merchant/recipient, e.g., 'Indomaret', 'Starbucks', 'PLN', 'Transfer ke Budi')",
   "transactionDate": "YYYY-MM-DDTHH:mm:ss",
   "totalAmount": 0.00,
-  "suggestedCategory": "Makanan & Minuman | Transportasi | Belanja Kebutuhan | Tagihan & Utilitas | Hiburan & Liburan | Kesehatan & Medis | Pendidikan & Kursus | Bocor Halus / Kopi / Admin | Pengeluaran Lainnya",
+  "suggestedCategory": "Makanan & Minuman | Transportasi | Belanja Kebutuhan | Tagihan & Utilitas | Hiburan & Liburan | Kesehatan & Medis | Pendidikan & Kursus | Kuliner & Jajan | Pengeluaran Lainnya",
   "type": "EXPENSE",
   "items": [
     {

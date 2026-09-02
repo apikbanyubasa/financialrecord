@@ -45,12 +45,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
             @Param("endDate") LocalDateTime endDate
     );
 
-    @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId AND t.type = 'EXPENSE' AND t.amount <= :threshold AND t.transactionDate >= :startDate ORDER BY t.transactionDate DESC")
-    List<Transaction> findMicroExpenses(
-            @Param("userId") UUID userId,
-            @Param("threshold") BigDecimal threshold,
-            @Param("startDate") LocalDateTime startDate
-    );
 
     @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.category.id = :categoryId AND t.type = 'EXPENSE' AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate")
     BigDecimal sumExpenseByUserIdAndCategoryAndDateRange(

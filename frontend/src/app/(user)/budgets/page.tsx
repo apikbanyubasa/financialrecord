@@ -204,7 +204,7 @@ export default function BudgetsPage() {
                   <span>1. Pos yang Harus Segera Diminimalkan:</span>
                 </p>
                 <p className="mt-1 pl-5">
-                  Pangkas pengeluaran pada pos sekunder seperti <strong>Kantong Jajan / Kopi (Bocor Halus)</strong>, <strong>Gaya Hidup & Hiburan</strong>, atau belanja konsumtif minimal sebesar <strong>30% - 50%</strong> untuk menutupi kelebihan dana pada pos {overbudgetItems.map(o => o.categoryName).join(', ')}.
+                  Pangkas pengeluaran pada pos sekunder seperti <strong>Kantong Jajan & Kopi</strong>, <strong>Gaya Hidup & Hiburan</strong>, atau belanja konsumtif minimal sebesar <strong>30% - 50%</strong> untuk menutupi kelebihan dana pada pos {overbudgetItems.map(o => o.categoryName).join(', ')}.
                 </p>
               </div>
 

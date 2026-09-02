@@ -22,7 +22,7 @@ public class DashboardController {
     private final TransactionService transactionService;
 
     @GetMapping("/summary")
-    @Operation(summary = "Ringkasan Dashboard Finansial", description = "Mengambil total pemasukan, rincian pengeluaran, rasio tabungan, bocor halus, dan grafik cashflow")
+    @Operation(summary = "Ringkasan Dashboard Finansial", description = "Mengambil total pemasukan, rincian pengeluaran, rasio tabungan, dan grafik cashflow")
     public ResponseEntity<ApiResponse<DashboardSummaryResponse>> getDashboardSummary(@AuthenticationPrincipal UserPrincipal principal) {
         DashboardSummaryResponse summary = transactionService.getDashboardSummary(principal.getId());
         return ResponseEntity.ok(ApiResponse.ok(summary));

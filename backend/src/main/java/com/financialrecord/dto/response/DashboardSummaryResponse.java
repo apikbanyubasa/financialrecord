@@ -20,9 +20,6 @@ public class DashboardSummaryResponse {
     private BigDecimal netSavingsThisMonth;
     private double savingsRatePercentage;
 
-    // Bocor halus (micro-spending) summary
-    private BigDecimal bocorHalusTotal;
-    private int bocorHalusCount;
 
     // Category breakdown for charts
     private List<CategoryBreakdownItem> categoryExpenses;

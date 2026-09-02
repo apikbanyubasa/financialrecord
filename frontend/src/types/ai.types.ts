@@ -23,17 +23,11 @@ export interface AdvisorRecommendation {
   impact: string;
 }
 
-export interface BocorHalusInsight {
-  detectedTotal: number;
-  insight: string;
-}
-
 export interface AiFinancialInsight {
   title: string;
   healthScore: number;
   summaryText: string;
   sentiment: 'EXCELLENT' | 'GOOD' | 'WARNING' | 'CRITICAL';
-  bocorHalusAnalysis: BocorHalusInsight;
   recommendations: AdvisorRecommendation[];
   generatedAt: string;
 }

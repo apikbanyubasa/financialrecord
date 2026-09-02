@@ -64,7 +64,7 @@ public class AiReceiptScannerService {
                     "  \"merchant\": \"string\",\n" +
                     "  \"transactionDate\": \"YYYY-MM-DDTHH:mm:ss\",\n" +
                     "  \"totalAmount\": number,\n" +
-                    "  \"suggestedCategory\": \"Makanan & Minuman | Transportasi | Belanja Kebutuhan | Tagihan & Utilitas | Hiburan & Liburan | Kesehatan & Medis | Bocor Halus / Kopi / Admin | Pengeluaran Lainnya\",\n" +
+                    "  \"suggestedCategory\": \"Makanan & Minuman | Transportasi | Belanja Kebutuhan | Tagihan & Utilitas | Hiburan & Liburan | Kesehatan & Medis | Kuliner & Jajan | Pengeluaran Lainnya\",\n" +
                     "  \"type\": \"EXPENSE\",\n" +
                     "  \"detectedPaymentMethod\": \"CASH | BANK | EWALLET\",\n" +
                     "  \"confidenceScore\": 0.95,\n" +

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Sparkles, Send, Bot, User, Loader2 } from 'lucide-react';
 
 const SUGGESTIONS = [
-  'Bagaimana cara mengurangi bocor halus kopi & admin bank?',
+  'Bagaimana cara mengoptimalkan pengeluaran harian?',
   'Apakah rasio tabungan saya bulan ini sudah ideal?',
   'Bantu buatkan alokasi 50/30/20 dari sisa pemasukan saya.',
   'Kategori mana yang paling boros dan butuh dievaluasi?',
@@ -19,7 +19,7 @@ export function AiAdvisorChatBox() {
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'Halo! Saya asisten Certified Financial Planner (CFP) AI kamu. Saya siap menganalisis arus kas, mendeteksi bocor halus, dan merancang strategi penghematan terbaik untuk kamu. Ada yang ingin kamu diskusikan hari ini?',
+      text: 'Halo! Saya asisten Certified Financial Planner (CFP) AI kamu. Saya siap menganalisis arus kas, mengevaluasi anggaran pos keuangan, dan merancang strategi penghematan terbaik untuk kamu. Ada yang ingin kamu diskusikan hari ini?',
       timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
     },
   ]);

@@ -132,7 +132,6 @@ public class AiAdvisorService {
                     "Context: User Total Income=Rp " + summary.getTotalIncomeThisMonth() +
                     ", Total Expense=Rp " + summary.getTotalExpenseThisMonth() +
                     ", Net Savings=Rp " + summary.getNetSavingsThisMonth() +
-                    ", Bocor Halus=Rp " + summary.getBocorHalusTotal() +
                     ". User says: " + userMessage;
 
             Map<String, Object> requestBody = new HashMap<>();
@@ -175,17 +174,12 @@ public class AiAdvisorService {
                 "- Total Expense: Rp " + summary.getTotalExpenseThisMonth() + "\n" +
                 "- Net Savings: Rp " + summary.getNetSavingsThisMonth() + "\n" +
                 "- Savings Rate: " + summary.getSavingsRatePercentage() + "%\n" +
-                "- Bocor Halus (Micro-spendings <= 50k): Rp " + summary.getBocorHalusTotal() + " (" + summary.getBocorHalusCount() + " transaksi)\n" +
                 "Output ONLY valid JSON with this exact schema:\n" +
                 "{\n" +
-                "  \"title\": \"string (e.g. 'Arus Kas Sehat, Optimalkan Alokasi Bocor Halus')\",\n" +
+                "  \"title\": \"string (e.g. 'Arus Kas Sehat, Optimalkan Alokasi Anggaran')\",\n" +
                 "  \"healthScore\": 82,\n" +
                 "  \"summaryText\": \"string (3-4 sentences in Indonesian summarizing the user's cashflow position and breakdown)\",\n" +
                 "  \"sentiment\": \"EXCELLENT | GOOD | WARNING | CRITICAL\",\n" +
-                "  \"bocorHalusAnalysis\": {\n" +
-                "    \"detectedTotal\": " + summary.getBocorHalusTotal() + ",\n" +
-                "    \"insight\": \"string (evaluation of micro-spending)\"\n" +
-                "  },\n" +
                 "  \"recommendations\": [\n" +
                 "    {\"category\": \"string\", \"action\": \"string\", \"impact\": \"string\"}\n" +
                 "  ]\n" +
@@ -197,12 +191,6 @@ public class AiAdvisorService {
         int score = node.path("healthScore").asInt(78);
         String summary = node.path("summaryText").asText("Cashflow Anda bulan ini berjalan cukup terkendali.");
         String sentiment = node.path("sentiment").asText("GOOD");
-
-        JsonNode bocorNode = node.path("bocorHalusAnalysis");
-        AiInsightResponse.BocorHalusInsight bocor = new AiInsightResponse.BocorHalusInsight(
-                BigDecimal.valueOf(bocorNode.path("detectedTotal").asDouble(0.0)),
-                bocorNode.path("insight").asText("Pengeluaran kecil terkontrol dengan baik.")
-        );
 
         List<AiInsightResponse.AdvisorRecommendation> recs = new ArrayList<>();
         JsonNode recsNode = node.path("recommendations");
@@ -221,7 +209,6 @@ public class AiAdvisorService {
                 .healthScore(score)
                 .summaryText(summary)
                 .sentiment(sentiment)
-                .bocorHalusAnalysis(bocor)
                 .recommendations(recs)
                 .generatedAt(LocalDateTime.now())
                 .build();
@@ -234,14 +221,14 @@ public class AiAdvisorService {
 
         List<AiInsightResponse.AdvisorRecommendation> recommendations = List.of(
                 new AiInsightResponse.AdvisorRecommendation(
-                        "Kendali Bocor Halus",
-                        "Batasi jajan kopi dan camilan harian maksimal 2x seminggu",
-                        "Potensi hemat Rp 300.000 - Rp 450.000 per bulan"
+                        "Alokasi Pos Tabungan",
+                        "Sisihkan 20% pemasukan langsung ke pos tabungan atau reksa dana di awal gajian",
+                        "Membentuk dana darurat stabil dalam 6 bulan"
                 ),
                 new AiInsightResponse.AdvisorRecommendation(
                         "Aturan 50/30/20",
-                        "Alokasikan minimal 20% dari pemasukan langsung ke instrumen reksa dana pasar uang di awal gajian",
-                        "Membentuk dana darurat stabil dalam 6 bulan"
+                        "Pertahankan batas belanja sekunder maksimal 30% dari total penghasilan",
+                        "Mencegah pengeluaran konsumtif berlebih"
                 ),
                 new AiInsightResponse.AdvisorRecommendation(
                         "Audit Langganan Digital",
@@ -251,16 +238,11 @@ public class AiAdvisorService {
         );
 
         return AiInsightResponse.builder()
-                .title("Kesehatan Finansial Baik: Waspadai Pola Bocor Halus")
+                .title("Kesehatan Finansial Terkendali")
                 .healthScore(score)
                 .summaryText("Total pemasukan Anda bulan ini berhasil menutup seluruh pengeluaran dengan rasio tabungan sebesar " +
-                        String.format("%.1f", summary.getSavingsRatePercentage()) + "%. Fokus utama bulan ini adalah menekan akumulasi transaksi mikro agar tidak menggerus potensi investasi.")
+                        String.format("%.1f", summary.getSavingsRatePercentage()) + "%. Disiplin anggaran pos belanja akan menjaga kestabilan finansial jangka panjang.")
                 .sentiment(score >= 80 ? "EXCELLENT" : "GOOD")
-                .bocorHalusAnalysis(new AiInsightResponse.BocorHalusInsight(
-                        summary.getBocorHalusTotal(),
-                        "Terdeteksi " + summary.getBocorHalusCount() + " transaksi kecil di bawah Rp 50.000 dengan total Rp " +
-                                String.format("%,.0f", summary.getBocorHalusTotal()) + ". Biaya admin dan jajan kecil menjadi kontributor utama."
-                ))
                 .recommendations(recommendations)
                 .generatedAt(LocalDateTime.now())
                 .build();

@@ -19,18 +19,8 @@ public class AiInsightResponse {
     private int healthScore; // 1-100
     private String summaryText;
     private String sentiment; // EXCELLENT, GOOD, WARNING, CRITICAL
-    private BocorHalusInsight bocorHalusAnalysis;
     private List<AdvisorRecommendation> recommendations;
     private LocalDateTime generatedAt;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class BocorHalusInsight {
-        private BigDecimal detectedTotal;
-        private String insight;
-    }
 
     @Data
     @Builder

@@ -51,8 +51,6 @@ export interface DashboardSummary {
   totalExpenseThisMonth: number;
   netSavingsThisMonth: number;
   savingsRatePercentage: number;
-  bocorHalusTotal: number;
-  bocorHalusCount: number;
   categoryExpenses: CategoryBreakdownItem[];
   categoryIncomes: CategoryBreakdownItem[];
   cashflowTrend: CashflowDataPoint[];

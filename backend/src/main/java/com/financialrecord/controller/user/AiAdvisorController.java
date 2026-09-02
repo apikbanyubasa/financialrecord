@@ -63,7 +63,7 @@ public class AiAdvisorController {
     }
 
     @GetMapping("/insights")
-    @Operation(summary = "Laporan Analisis Finansial & Bocor Halus AI", description = "Menghasilkan evaluasi kesehatan finansial (skor 1-100), deteksi bocor halus, dan rekomendasi aksi")
+    @Operation(summary = "Laporan Analisis Kesehatan Finansial AI", description = "Menghasilkan evaluasi kesehatan finansial (skor 1-100) dan rekomendasi aksi")
     public ResponseEntity<ApiResponse<AiInsightResponse>> getFinancialInsights(@AuthenticationPrincipal UserPrincipal principal) {
         AiInsightResponse response = advisorService.generateFinancialInsight(principal.getId());
         return ResponseEntity.ok(ApiResponse.ok(response));

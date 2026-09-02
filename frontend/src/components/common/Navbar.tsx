@@ -26,15 +26,21 @@ export function Navbar() {
           </div>
         </Link>
 
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium text-muted-foreground">
-          <Link href="#features" className="hover:text-foreground transition-colors">
-            Fitur Utama
+        <nav className="hidden lg:flex items-center space-x-6 text-xs font-semibold text-muted-foreground">
+          <Link href="#nlp-entry" className="hover:text-emerald-500 transition-colors">
+            Catat Cepat AI
           </Link>
-          <Link href="#ai-scanner" className="hover:text-foreground transition-colors">
-            AI Vision OCR
+          <Link href="#kantong-pos" className="hover:text-emerald-500 transition-colors">
+            Kantong Pos
           </Link>
-          <Link href="#advisor" className="hover:text-foreground transition-colors">
-            Smart Advisor
+          <Link href="#budgeting" className="hover:text-emerald-500 transition-colors">
+            Limit Budget
+          </Link>
+          <Link href="#dashboard-preview" className="hover:text-emerald-500 transition-colors">
+            Arus Kas
+          </Link>
+          <Link href="#features" className="hover:text-emerald-500 transition-colors">
+            Fitur Lengkap
           </Link>
         </nav>
 

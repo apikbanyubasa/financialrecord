@@ -46,7 +46,6 @@ public class TransactionServiceImpl implements TransactionService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
 
-    private static final BigDecimal BOCOR_HALUS_THRESHOLD = new BigDecimal("50000.00");
 
     @Override
     @Transactional(readOnly = true)
@@ -277,14 +276,7 @@ public class TransactionServiceImpl implements TransactionService {
                     .multiply(new BigDecimal("100")).doubleValue();
         }
 
-        // 3. Bocor Halus (Micro-expenses <= 50k)
-        List<Transaction> microExpenses = transactionRepository.findMicroExpenses(userId, BOCOR_HALUS_THRESHOLD, startOfMonth);
-        BigDecimal bocorHalusTotal = microExpenses.stream()
-                .map(Transaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        int bocorHalusCount = microExpenses.size();
-
-        // 4. Category Breakdown for Expenses
+        // 3. Category Breakdown for Expenses
         List<Object[]> expenseGroups = transactionRepository.sumAmountByCategoryGroup(
                 userId, TransactionType.EXPENSE, startOfMonth, endOfMonth);
         List<DashboardSummaryResponse.CategoryBreakdownItem> categoryExpenses = new ArrayList<>();
@@ -376,8 +368,6 @@ public class TransactionServiceImpl implements TransactionService {
                 .totalExpenseThisMonth(totalExpense)
                 .netSavingsThisMonth(netSavings)
                 .savingsRatePercentage(savingsRate)
-                .bocorHalusTotal(bocorHalusTotal)
-                .bocorHalusCount(bocorHalusCount)
                 .categoryExpenses(categoryExpenses)
                 .categoryIncomes(categoryIncomes)
                 .cashflowTrend(cashflowTrend)

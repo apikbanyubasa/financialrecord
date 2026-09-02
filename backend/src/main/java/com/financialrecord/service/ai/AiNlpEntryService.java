@@ -183,7 +183,7 @@ public class AiNlpEntryService {
             }
         } else {
             if (lower.contains("kopi") || lower.contains("nongkrong") || lower.contains("cafe") || lower.contains("kafe") || lower.contains("snack")) {
-                detectedWalletName = "Kantong Bocor Halus / Jajan & Kopi";
+                detectedWalletName = "Kantong Jajan & Kopi";
                 walletType = WalletType.CASH;
                 aiInsight = "Dideteksi AI dari pos jajan santai & kopi";
             } else if (lower.contains("makan") || lower.contains("nasi") || lower.contains("warung") || lower.contains("resto") || lower.contains("ayam") || lower.contains("bakso") || lower.contains("mie") || lower.contains("sarapan")) {
@@ -292,7 +292,7 @@ public class AiNlpEntryService {
                 return findCategoryByName(filtered, "Pendidikan & Kursus");
             }
             if (lower.contains("admin") || lower.contains("biaya admin") || lower.contains("parkir liar") || lower.contains("rokok")) {
-                return findCategoryByName(filtered, "Bocor Halus");
+                return findCategoryByName(filtered, "Pengeluaran Lainnya");
             }
         } else {
             if (lower.contains("gaji") || lower.contains("gajian") || lower.contains("salary") || lower.contains("payroll")) {

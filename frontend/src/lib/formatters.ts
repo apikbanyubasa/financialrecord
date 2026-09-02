@@ -62,6 +62,18 @@ export function formatPercentage(value: number | undefined): string {
   return `${value.toFixed(1)}%`;
 }
 
+export function formatMonthYear(monthStr: string | undefined): string {
+  if (!monthStr) return '-';
+  try {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
+    return format(date, 'MMMM yyyy', { locale: id });
+  } catch {
+    return monthStr;
+  }
+}
+
+
 export interface DateGroupedTransactions {
   dateKey: string;
   displayLabel: string;
