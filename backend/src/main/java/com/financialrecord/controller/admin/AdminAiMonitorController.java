@@ -1,8 +1,8 @@
 package com.financialrecord.controller.admin;
 
-import com.financialrecord.dto.response.ApiResponse;
+import com.financialrecord.dto.response.AiUsageLogResponse;
 import com.financialrecord.dto.response.AiUsageStatsResponse;
-import com.financialrecord.entity.AiUsageLog;
+import com.financialrecord.dto.response.ApiResponse;
 import com.financialrecord.service.admin.AdminDashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,10 +33,10 @@ public class AdminAiMonitorController {
 
     @GetMapping("/logs")
     @Operation(summary = "Log Riwayat Pemanggilan AI Per Request")
-    public ResponseEntity<ApiResponse<Page<AiUsageLog>>> getAiUsageLogs(
+    public ResponseEntity<ApiResponse<Page<AiUsageLogResponse>>> getAiUsageLogs(
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<AiUsageLog> logs = adminDashboardService.getAiUsageLogs(pageable);
+        Page<AiUsageLogResponse> logs = adminDashboardService.getAiUsageLogs(pageable);
         return ResponseEntity.ok(ApiResponse.ok(logs));
     }
 }

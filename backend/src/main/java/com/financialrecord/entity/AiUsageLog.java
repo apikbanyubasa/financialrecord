@@ -24,6 +24,7 @@ public class AiUsageLog {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
 
     @Enumerated(EnumType.STRING)

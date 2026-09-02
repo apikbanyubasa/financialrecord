@@ -1,8 +1,8 @@
 package com.financialrecord.service.admin;
 
 import com.financialrecord.dto.response.AdminMetricsResponse;
+import com.financialrecord.dto.response.AiUsageLogResponse;
 import com.financialrecord.dto.response.AiUsageStatsResponse;
-import com.financialrecord.entity.AiUsageLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -12,5 +12,5 @@ public interface AdminDashboardService {
 
     AiUsageStatsResponse getAiUsageStats();
 
-    Page<AiUsageLog> getAiUsageLogs(Pageable pageable);
+    Page<AiUsageLogResponse> getAiUsageLogs(Pageable pageable);
 }

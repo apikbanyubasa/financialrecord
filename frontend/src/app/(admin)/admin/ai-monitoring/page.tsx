@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
+  Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function AdminAiMonitoringPage() {
@@ -26,17 +28,27 @@ export default function AdminAiMonitoringPage() {
     return <LoadingSpinner text="Memuat data monitoring AI..." className="h-96" />;
   }
 
+  const logs = aiLogsData?.content || [];
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-          <Cpu className="h-5 w-5 text-indigo-400" />
-          <span>AI Token & Cost Monitoring</span>
-        </h2>
-        <p className="text-xs text-slate-400">
-          Pantau konsumsi token, estimasi biaya API USD, latensi pemrosesan, dan log eksekusi model AI
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-3xl bg-slate-900/60 border border-slate-800">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+            <Cpu className="h-5 w-5 text-indigo-400" />
+            <span>AI Token & Cost Monitoring Engine</span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Pantau konsumsi token, estimasi biaya API USD, latensi pemrosesan, dan log eksekusi model Google Gemini AI
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-mono px-3 py-1 rounded-xl bg-slate-950 border border-slate-800 text-indigo-400 font-bold">
+            Model: gemini-1.5-flash
+          </span>
+        </div>
       </div>
 
       {/* Top 4 KPI Metrics */}
@@ -58,7 +70,7 @@ export default function AdminAiMonitoringPage() {
               {aiStats?.totalTokens.toLocaleString()}
             </p>
             <p className="text-[11px] text-slate-400 mt-1">
-              Prompt: {aiStats?.promptTokens.toLocaleString()} | Comp: {aiStats?.completionTokens.toLocaleString()}
+              In: {aiStats?.promptTokens.toLocaleString()} | Out: {aiStats?.completionTokens.toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -69,7 +81,7 @@ export default function AdminAiMonitoringPage() {
             <p className="text-2xl font-bold text-purple-400 font-mono mt-1">
               ${aiStats?.totalCostUsd.toFixed(5)} <span className="text-xs text-slate-400">USD</span>
             </p>
-            <p className="text-[11px] text-slate-400 mt-1">Kalkulasi tarif per 1M token</p>
+            <p className="text-[11px] text-slate-400 mt-1">Tarif Gemini 1.5 Flash</p>
           </CardContent>
         </Card>
 
@@ -89,40 +101,60 @@ export default function AdminAiMonitoringPage() {
 
       {/* Detailed AI Call Logs Table */}
       <Card className="bg-slate-900/60 border-slate-800 text-slate-100">
-        <CardHeader className="pb-3 border-b border-slate-800">
-          <CardTitle className="text-base text-white">Log Riwayat Pemanggilan AI</CardTitle>
-          <CardDescription className="text-xs text-slate-400">
-            Catatan per transaksi pemrosesan multimodal OCR, NLP parsing, dan chatbot
-          </CardDescription>
+        <CardHeader className="pb-3 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <CardTitle className="text-base text-white">Log Riwayat Eksekusi AI</CardTitle>
+            <CardDescription className="text-xs text-slate-400">
+              Catatan per transaksi pemrosesan Catat Cepat Multi-Item NLP parsing via Google Gemini
+            </CardDescription>
+          </div>
+          <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-semibold text-emerald-400">
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+            <span>Telemetri Teknis Anonim (Tanpa Rekam Teks User)</span>
+          </div>
         </CardHeader>
+
         <CardContent className="p-0">
           {isAiLogsLoading ? (
             <LoadingSpinner text="Memuat riwayat log AI..." className="h-48" />
-          ) : aiLogsData?.content?.length === 0 ? (
-            <div className="p-10 text-center text-slate-400 text-xs">Belum ada catatan log pemakaian AI.</div>
+          ) : logs.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 text-xs space-y-2">
+              <Sparkles className="h-8 w-8 mx-auto text-indigo-400/50" />
+              <p className="font-semibold text-white">Belum ada riwayat pemanggilan AI yang tercatat.</p>
+              <p className="text-slate-400 text-[11px]">
+                Log akan terisi secara real-time saat user melakukan pencatatan transaksi lewat tombol &quot;Ketik Cepat AI (NLP)&quot;.
+              </p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left text-slate-300">
                 <thead className="uppercase text-[10px] text-slate-400 border-b border-slate-800 bg-slate-950/80">
                   <tr>
-                    <th className="px-4 py-3">Fitur</th>
-                    <th className="px-4 py-3">Model</th>
-                    <th className="px-4 py-3">Tokens (In/Out)</th>
-                    <th className="px-4 py-3">Estimasi Biaya</th>
-                    <th className="px-4 py-3">Latensi</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Waktu</th>
+                    <th className="px-4 py-3 font-semibold">Fitur Finansial</th>
+                    <th className="px-4 py-3 font-semibold">Model Engine</th>
+                    <th className="px-4 py-3 font-semibold">Tokens (Prompt/Completion)</th>
+                    <th className="px-4 py-3 font-semibold">Estimasi Biaya</th>
+                    <th className="px-4 py-3 font-semibold">Latensi</th>
+                    <th className="px-4 py-3 font-semibold">Status</th>
+                    <th className="px-4 py-3 font-semibold">Waktu Kejadian</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80">
-                  {aiLogsData?.content.map((log) => (
+                  {logs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-white">{log.featureType}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="h-2 w-2 rounded-full bg-indigo-400" />
+                          <span className="font-semibold text-white">
+                            Catat Cepat Multi-Item NLP
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-slate-400 font-mono">{log.modelName}</td>
                       <td className="px-4 py-3 font-mono">
                         {log.totalTokens} ({log.promptTokens}/{log.completionTokens})
                       </td>
-                      <td className="px-4 py-3 font-mono text-purple-400">${log.estimatedCostUsd.toFixed(6)}</td>
+                      <td className="px-4 py-3 font-mono text-purple-400">${Number(log.estimatedCostUsd).toFixed(6)}</td>
                       <td className="px-4 py-3">{log.latencyMs} ms</td>
                       <td className="px-4 py-3">
                         <span

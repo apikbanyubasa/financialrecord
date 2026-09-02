@@ -1,6 +1,7 @@
 package com.financialrecord.service.admin.impl;
 
 import com.financialrecord.dto.response.AdminMetricsResponse;
+import com.financialrecord.dto.response.AiUsageLogResponse;
 import com.financialrecord.dto.response.AiUsageStatsResponse;
 import com.financialrecord.entity.AiUsageLog;
 import com.financialrecord.repository.AiUsageLogRepository;
@@ -89,7 +90,22 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AiUsageLog> getAiUsageLogs(Pageable pageable) {
-        return aiUsageLogRepository.findAllByOrderByCreatedAtDesc(pageable);
+    public Page<AiUsageLogResponse> getAiUsageLogs(Pageable pageable) {
+        Page<AiUsageLog> logs = aiUsageLogRepository.findByFeatureType(com.financialrecord.entity.enums.AiFeatureType.NLP_INPUT, pageable);
+        return logs.map(l -> AiUsageLogResponse.builder()
+                .id(l.getId())
+                .userId(l.getUser() != null ? l.getUser().getId() : null)
+                .featureType(l.getFeatureType() != null ? l.getFeatureType().name() : "NLP_INPUT")
+                .modelName(l.getModelName())
+                .promptTokens(l.getPromptTokens())
+                .completionTokens(l.getCompletionTokens())
+                .totalTokens(l.getTotalTokens())
+                .estimatedCostUsd(l.getEstimatedCostUsd())
+                .latencyMs(l.getLatencyMs())
+                .status(l.getStatus())
+                .errorMessage(l.getErrorMessage())
+                .createdAt(l.getCreatedAt())
+                .build()
+        );
     }
 }
