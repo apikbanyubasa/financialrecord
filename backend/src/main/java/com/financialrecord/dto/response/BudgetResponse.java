@@ -1,5 +1,6 @@
 package com.financialrecord.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +26,19 @@ public class BudgetResponse {
     private BigDecimal remainingAmount;
     private double percentageUsed;
     private String periodMonthYear;
+
+    @JsonProperty("isOverBudget")
     private boolean isOverBudget;
+
     private LocalDateTime createdAt;
+
+    @JsonProperty("isOverBudget")
+    public boolean isOverBudget() {
+        return isOverBudget;
+    }
+
+    @JsonProperty("isOverBudget")
+    public void setOverBudget(boolean overBudget) {
+        this.isOverBudget = overBudget;
+    }
 }

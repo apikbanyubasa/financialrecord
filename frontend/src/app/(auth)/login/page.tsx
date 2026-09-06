@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
-import { WalletCards, Lock, Mail, Sparkles, UserCheck, ShieldCheck } from 'lucide-react';
+import { WalletCards, Lock, Mail, Sparkles } from 'lucide-react';
 
 export default function LoginPage() {
   const { login, isLoggingIn, loginError } = useAuth();
@@ -25,10 +25,6 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemoAccount = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-emerald-950/15">
@@ -84,35 +80,6 @@ export default function LoginPage() {
                 Masuk Sekarang
               </Button>
             </form>
-
-            {/* Quick Demo Fill Buttons */}
-            <div className="mt-6 pt-4 border-t border-border/60 space-y-2">
-              <p className="text-[11px] font-semibold text-muted-foreground text-center">
-                Akun Demo Cepat (1-Klik):
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-xs space-x-1.5 h-8 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                  onClick={() => fillDemoAccount('user@financialrecord.com', 'user123')}
-                >
-                  <UserCheck className="h-3.5 w-3.5" />
-                  <span>Demo User</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-xs space-x-1.5 h-8 border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10"
-                  onClick={() => fillDemoAccount('admin@financialrecord.com', 'admin123')}
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>Super Admin</span>
-                </Button>
-              </div>
-            </div>
           </CardContent>
 
           <CardFooter className="flex justify-center border-t border-border/50 py-4 text-xs text-muted-foreground">

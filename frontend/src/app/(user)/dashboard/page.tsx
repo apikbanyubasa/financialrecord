@@ -42,7 +42,10 @@ const MONTH_OPTIONS = [
   { value: '12', label: 'Desember' },
 ];
 
-const YEAR_OPTIONS = [2027, 2026, 2025, 2024, 2023, 2022];
+// Perhitungan tahun dinamis: 5 tahun ke belakang dihitung dari tahun berjalan
+const currentYearNow = new Date().getFullYear();
+const DYNAMIC_YEARS_LIST = Array.from({ length: 5 }, (_, i) => currentYearNow - 4 + i); // [2022, 2023, 2024, 2025, 2026]
+const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => currentYearNow - i); // [2026, 2025, 2024, 2023, 2022]
 
 export default function DashboardPage() {
   const {
@@ -119,9 +122,9 @@ export default function DashboardPage() {
     const yearNum = parseInt(selectedYear, 10);
     const monthNum = parseInt(selectedMonth, 10);
 
-    // MODE 1: PER TAHUN (Tren Perbandingan Antar-Tahun 2022 - 2027)
+    // MODE 1: PER TAHUN (Tren Perbandingan Antar-Tahun Dinamis 5 Tahun ke Belakang)
     if (chartViewMode === 'YEARLY') {
-      const yearsList = [2022, 2023, 2024, 2025, 2026, 2027];
+      const yearsList = DYNAMIC_YEARS_LIST;
       const yearsData: CashflowDataPoint[] = yearsList.map((y) => ({
         date: String(y),
         income: 0,
@@ -235,7 +238,7 @@ export default function DashboardPage() {
   }, [transactions, chartViewMode, selectedYear, activePeriodPrefix, summary]);
 
   const activePeriodLabel = useMemo(() => {
-    if (chartViewMode === 'YEARLY') return 'Semua Tahun (2022 - 2027)';
+    if (chartViewMode === 'YEARLY') return `Semua Tahun (${DYNAMIC_YEARS_LIST[0]} - ${DYNAMIC_YEARS_LIST[DYNAMIC_YEARS_LIST.length - 1]})`;
     if (chartViewMode === 'MONTHLY') return `Tahun ${selectedYear}`;
     return `${selectedMonthName} ${selectedYear}`;
   }, [chartViewMode, selectedMonthName, selectedYear]);
@@ -377,14 +380,14 @@ export default function DashboardPage() {
                 {/* Mode Selector Tabs: Per Tahun | Per Bulan | Harian */}
                 <div className="flex items-center p-1 rounded-xl bg-muted/60 border border-border/40 gap-1">
                   <button
-                    onClick={() => setChartViewMode('YEARLY')}
+                    onClick={() => setChartViewMode('DAILY')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                      chartViewMode === 'YEARLY'
+                      chartViewMode === 'DAILY'
                         ? 'bg-background text-primary shadow-sm border border-primary/20'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    Per Tahun
+                    Harian
                   </button>
 
                   <button
@@ -395,18 +398,18 @@ export default function DashboardPage() {
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    Per Bulan
+                    Bulanan
                   </button>
 
                   <button
-                    onClick={() => setChartViewMode('DAILY')}
+                    onClick={() => setChartViewMode('YEARLY')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                      chartViewMode === 'DAILY'
+                      chartViewMode === 'YEARLY'
                         ? 'bg-background text-primary shadow-sm border border-primary/20'
                         : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    Harian
+                    Tahunan
                   </button>
                 </div>
               </div>
@@ -450,7 +453,7 @@ export default function DashboardPage() {
 
                 <span className="text-[11px] text-muted-foreground font-semibold">
                   {chartViewMode === 'YEARLY'
-                    ? 'Menampilkan Perbandingan Arus Kas Tahun 2022 - 2027'
+                    ? `Menampilkan Perbandingan Arus Kas Tahun ${DYNAMIC_YEARS_LIST[0]} - ${DYNAMIC_YEARS_LIST[DYNAMIC_YEARS_LIST.length - 1]}`
                     : chartViewMode === 'MONTHLY'
                     ? `Menampilkan 12 Bulan (Jan - Des) di Tahun ${selectedYear}`
                     : `Menampilkan ${dynamicCashflowTrend.length} Hari di ${selectedMonthName} ${selectedYear}`}

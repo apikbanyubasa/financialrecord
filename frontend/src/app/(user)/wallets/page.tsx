@@ -48,6 +48,7 @@ import {
   CalendarDays,
   Globe,
   BarChart3,
+  Clock,
 } from 'lucide-react';
 
 const iconComponents: Record<string, any> = {
@@ -68,7 +69,7 @@ const iconComponents: Record<string, any> = {
   Wallet: WalletIcon,
 };
 
-type PeriodMode = 'MONTHLY' | 'YEARLY' | 'ALL_TIME';
+type PeriodMode = 'DAILY' | 'MONTHLY' | 'YEARLY' | 'ALL_TIME';
 
 interface TransactionPocket {
   id: string;
@@ -89,11 +90,13 @@ const MONTH_NAMES = [
 ];
 
 export default function WalletsPage() {
+  const currentDateStr = useMemo(() => new Date().toISOString().slice(0, 10), []); // "YYYY-MM-DD"
   const currentMonthStr = useMemo(() => new Date().toISOString().slice(0, 7), []); // "YYYY-MM"
   const currentYearStr = useMemo(() => String(new Date().getFullYear()), []); // "YYYY"
 
   // --- Period Filter State ---
   const [periodMode, setPeriodMode] = useState<PeriodMode>('MONTHLY');
+  const [selectedDate, setSelectedDate] = useState<string>(currentDateStr);
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
   const [selectedYear, setSelectedYear] = useState<string>(currentYearStr);
 
@@ -112,6 +115,22 @@ export default function WalletsPage() {
   const [selectedBudgetForEdit, setSelectedBudgetForEdit] = useState<Budget | null>(null);
 
   // --- Date Navigation Handlers ---
+  const handlePrevDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d.toISOString().slice(0, 10));
+  };
+
+  const handleNextDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(d.toISOString().slice(0, 10));
+  };
+
+  const handleCurrentDay = () => {
+    setSelectedDate(currentDateStr);
+  };
+
   const handlePrevMonth = () => {
     const [year, month] = selectedMonth.split('-').map(Number);
     const date = new Date(year, month - 2, 1);
@@ -143,6 +162,12 @@ export default function WalletsPage() {
   // --- Filter Transactions Strictly by Period ---
   const filteredTransactions = useMemo(() => {
     if (periodMode === 'ALL_TIME') return transactions;
+    if (periodMode === 'DAILY') {
+      return transactions.filter((tx) => {
+        if (!tx.transactionDate) return false;
+        return tx.transactionDate.startsWith(selectedDate);
+      });
+    }
     if (periodMode === 'YEARLY') {
       return transactions.filter((tx) => {
         if (!tx.transactionDate) return false;
@@ -154,7 +179,7 @@ export default function WalletsPage() {
       if (!tx.transactionDate) return false;
       return tx.transactionDate.startsWith(selectedMonth);
     });
-  }, [transactions, periodMode, selectedMonth, selectedYear]);
+  }, [transactions, periodMode, selectedDate, selectedMonth, selectedYear]);
 
   // --- Group Filtered Transactions into Active Pockets & Totals ---
   const { incomePockets, expensePockets, totalIncome, totalExpense, netBalance } = useMemo(() => {
@@ -313,9 +338,18 @@ export default function WalletsPage() {
 
   const currentPeriodDisplay = useMemo(() => {
     if (periodMode === 'ALL_TIME') return 'Semua Waktu';
+    if (periodMode === 'DAILY') {
+      try {
+        const [y, m, d] = selectedDate.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        return dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      } catch {
+        return selectedDate;
+      }
+    }
     if (periodMode === 'YEARLY') return `Tahun ${selectedYear}`;
     return formatMonthYear(selectedMonth);
-  }, [periodMode, selectedMonth, selectedYear]);
+  }, [periodMode, selectedDate, selectedMonth, selectedYear]);
 
   const isLoading = isTxLoading || isBudgetsLoading;
 
@@ -341,6 +375,18 @@ export default function WalletsPage() {
         <div className="flex flex-wrap items-center gap-2.5 p-2 rounded-2xl bg-card border border-border/80 shadow-sm">
           {/* Mode Switcher Buttons */}
           <div className="flex items-center p-1 rounded-xl bg-muted/60 border border-border/40 gap-1">
+            <button
+              onClick={() => setPeriodMode('DAILY')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                periodMode === 'DAILY'
+                  ? 'bg-background text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-500/30'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Clock className="h-3.5 w-3.5" />
+              <span>Harian</span>
+            </button>
+
             <button
               onClick={() => setPeriodMode('MONTHLY')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
@@ -377,6 +423,49 @@ export default function WalletsPage() {
               <span>Semua</span>
             </button>
           </div>
+
+          {/* Controls for Daily Mode */}
+          {periodMode === 'DAILY' && (
+            <div className="flex items-center space-x-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={handlePrevDay}
+                title="Hari Sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-background border border-input text-xs font-bold">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                  className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer text-foreground"
+                />
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={handleNextDay}
+                title="Hari Berikutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+
+              {selectedDate !== currentDateStr && (
+                <button
+                  onClick={handleCurrentDay}
+                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                >
+                  Hari Ini
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Controls for Monthly Mode */}
           {periodMode === 'MONTHLY' && (

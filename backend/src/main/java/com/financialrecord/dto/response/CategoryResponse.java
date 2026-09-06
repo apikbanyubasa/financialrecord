@@ -1,5 +1,6 @@
 package com.financialrecord.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.financialrecord.entity.enums.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,6 +21,19 @@ public class CategoryResponse {
     private TransactionType type;
     private String icon;
     private String color;
+
+    @JsonProperty("isSystemDefault")
     private boolean isSystemDefault;
+
     private LocalDateTime createdAt;
+
+    @JsonProperty("isSystemDefault")
+    public boolean isSystemDefault() {
+        return isSystemDefault;
+    }
+
+    @JsonProperty("isSystemDefault")
+    public void setSystemDefault(boolean systemDefault) {
+        this.isSystemDefault = systemDefault;
+    }
 }

@@ -1,5 +1,6 @@
 package com.financialrecord.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.financialrecord.entity.enums.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,19 @@ public class TransactionResponse {
     private LocalDateTime transactionDate;
     private String description;
     private String receiptImageUrl;
+
+    @JsonProperty("isRecurring")
     private boolean isRecurring;
+
     private LocalDateTime createdAt;
+
+    @JsonProperty("isRecurring")
+    public boolean isRecurring() {
+        return isRecurring;
+    }
+
+    @JsonProperty("isRecurring")
+    public void setRecurring(boolean recurring) {
+        this.isRecurring = recurring;
+    }
 }
