@@ -19,6 +19,8 @@ import {
   ArrowRight,
   Calendar,
   BarChart3,
+  AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -43,7 +45,15 @@ const MONTH_OPTIONS = [
 const YEAR_OPTIONS = [2027, 2026, 2025, 2024, 2023, 2022];
 
 export default function DashboardPage() {
-  const { summary, transactions, isSummaryLoading, isLoading: isTxLoading } = useTransactions({ size: 1000 });
+  const {
+    summary,
+    transactions,
+    isSummaryLoading,
+    isLoading: isTxLoading,
+    isError,
+    refetchSummary,
+    refetch,
+  } = useTransactions({ size: 1000 });
 
   // Default month and year
   const now = useMemo(() => new Date(), []);
@@ -234,6 +244,32 @@ export default function DashboardPage() {
 
   if (isLoading && !summary) {
     return <LoadingSpinner text="Memuat ringkasan keuangan Anda..." className="h-96" />;
+  }
+
+  if (isError && !summary) {
+    return (
+      <Card className="p-10 text-center space-y-4 max-w-md mx-auto my-16 border-rose-500/20 bg-rose-500/5">
+        <div className="h-12 w-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <div className="space-y-1">
+          <h3 className="font-bold text-base text-foreground">Gagal Memuat Ringkasan Keuangan</h3>
+          <p className="text-xs text-muted-foreground">
+            Terjadi kendala saat menyinkronkan data dengan server. Silakan periksa koneksi Anda dan coba lagi.
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            refetchSummary();
+            refetch();
+          }}
+          className="gap-2 text-xs"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Coba Lagi
+        </Button>
+      </Card>
+    );
   }
 
   return (

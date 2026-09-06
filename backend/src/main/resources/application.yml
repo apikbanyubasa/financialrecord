@@ -7,10 +7,16 @@ spring:
   application:
     name: FinancialRecord-Backend
 
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:backend/.env[.properties]
+      - optional:file:../.env[.properties]
+
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/financialrecord_db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -36,8 +42,11 @@ spring:
 # Application Custom Configurations
 app:
   jwt:
-    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours
+
+  cookie:
+    secure: ${COOKIE_SECURE:false}
   
   ai:
     gemini:
@@ -52,6 +61,14 @@ app:
 
   storage:
     upload-dir: ${UPLOAD_DIR:uploads/receipts}
+
+  rate-limiting:
+    enabled: ${RATE_LIMITING_ENABLED:true}
+    auth-limit-per-minute: ${RATE_LIMIT_AUTH_PER_MIN:10}
+    ai-limit-per-minute: ${RATE_LIMIT_AI_PER_MIN:20}
+    user-limit-per-minute: ${RATE_LIMIT_USER_PER_MIN:120}
+    admin-limit-per-minute: ${RATE_LIMIT_ADMIN_PER_MIN:200}
+    public-limit-per-minute: ${RATE_LIMIT_PUBLIC_PER_MIN:300}
 
 # Springdoc OpenAPI / Swagger UI
 springdoc:

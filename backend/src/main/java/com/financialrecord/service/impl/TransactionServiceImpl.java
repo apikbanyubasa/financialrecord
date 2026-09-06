@@ -314,23 +314,45 @@ public class TransactionServiceImpl implements TransactionService {
                     catId != null ? catId.toString() : "", name, icon, color, amount, percentage));
         }
 
-        // 6. Cashflow Trend (Past 14 days)
+        // 6. Cashflow Trend (Past 14 days) - Single aggregated query to prevent N+1 queries
         LocalDate today = LocalDate.now();
+        LocalDate startDate14 = today.minusDays(13);
+        LocalDateTime rangeStart = startDate14.atStartOfDay();
+        LocalDateTime rangeEnd = today.atTime(LocalTime.MAX);
+
+        List<Object[]> dailyRows = transactionRepository.sumDailyAmountByUserIdAndDateRange(
+                userId, rangeStart, rangeEnd);
+
+        Map<LocalDate, Map<TransactionType, BigDecimal>> dailyMap = new HashMap<>();
+        for (Object[] row : dailyRows) {
+            LocalDate rowDate = null;
+            if (row[0] instanceof LocalDate) {
+                rowDate = (LocalDate) row[0];
+            } else if (row[0] instanceof java.sql.Date) {
+                rowDate = ((java.sql.Date) row[0]).toLocalDate();
+            } else if (row[0] != null) {
+                try {
+                    rowDate = LocalDate.parse(row[0].toString());
+                } catch (Exception ignored) {}
+            }
+
+            TransactionType type = (TransactionType) row[1];
+            BigDecimal amount = (BigDecimal) row[2];
+
+            if (rowDate != null && type != null) {
+                dailyMap.computeIfAbsent(rowDate, k -> new HashMap<>())
+                        .put(type, amount != null ? amount : BigDecimal.ZERO);
+            }
+        }
+
         DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         List<DashboardSummaryResponse.CashflowDataPoint> cashflowTrend = new ArrayList<>();
 
         for (int i = 13; i >= 0; i--) {
             LocalDate date = today.minusDays(i);
-            LocalDateTime dayStart = date.atStartOfDay();
-            LocalDateTime dayEnd = date.atTime(LocalTime.MAX);
-
-            BigDecimal dayIncome = transactionRepository.sumAmountByUserIdAndTypeAndDateRange(
-                    userId, TransactionType.INCOME, dayStart, dayEnd);
-            BigDecimal dayExpense = transactionRepository.sumAmountByUserIdAndTypeAndDateRange(
-                    userId, TransactionType.EXPENSE, dayStart, dayEnd);
-
-            if (dayIncome == null) dayIncome = BigDecimal.ZERO;
-            if (dayExpense == null) dayExpense = BigDecimal.ZERO;
+            Map<TransactionType, BigDecimal> typeMap = dailyMap.getOrDefault(date, Collections.emptyMap());
+            BigDecimal dayIncome = typeMap.getOrDefault(TransactionType.INCOME, BigDecimal.ZERO);
+            BigDecimal dayExpense = typeMap.getOrDefault(TransactionType.EXPENSE, BigDecimal.ZERO);
 
             cashflowTrend.add(new DashboardSummaryResponse.CashflowDataPoint(
                     date.format(df),

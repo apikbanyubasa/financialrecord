@@ -224,12 +224,6 @@ export default function LandingPage() {
                   <ArrowRight className="h-4 w-4 ml-1.5" />
                 </Button>
               </Link>
-              <Link href="#nlp-entry">
-                <Button variant="outline" size="lg" className="rounded-xl px-6 text-sm font-semibold border-border/80 hover:bg-accent/60">
-                  <Play className="h-3.5 w-3.5 mr-2 text-emerald-500" />
-                  <span>Coba Live Simulator AI</span>
-                </Button>
-              </Link>
             </div>
           </div>
 

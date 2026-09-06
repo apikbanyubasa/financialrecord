@@ -5,9 +5,14 @@ export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     const res = await api.post<ApiResponse<AuthResponse>>('/auth/login', data);
     const authData = res.data.data;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('token', authData.token);
-      localStorage.setItem('user', JSON.stringify(authData));
+    if (typeof window !== 'undefined' && authData) {
+      // Store only non-sensitive display meta, never the JWT token (which is in HttpOnly cookie)
+      localStorage.setItem('user_meta', JSON.stringify({
+        id: authData.id,
+        email: authData.email,
+        fullName: authData.fullName,
+        role: authData.role,
+      }));
     }
     return authData;
   },
@@ -15,9 +20,13 @@ export const authService = {
   async register(data: RegisterRequest): Promise<AuthResponse> {
     const res = await api.post<ApiResponse<AuthResponse>>('/auth/register', data);
     const authData = res.data.data;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('token', authData.token);
-      localStorage.setItem('user', JSON.stringify(authData));
+    if (typeof window !== 'undefined' && authData) {
+      localStorage.setItem('user_meta', JSON.stringify({
+        id: authData.id,
+        email: authData.email,
+        fullName: authData.fullName,
+        role: authData.role,
+      }));
     }
     return authData;
   },
@@ -27,18 +36,25 @@ export const authService = {
     return res.data.data;
   },
 
-  logout() {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  async logout(): Promise<void> {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Ignore network errors during logout
+    } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user_meta');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
   },
 
-  getCurrentUser(): AuthResponse | null {
+  getSavedUserMeta(): Partial<AuthResponse> | null {
     if (typeof window !== 'undefined') {
-      const user = localStorage.getItem('user');
-      return user ? JSON.parse(user) : null;
+      const meta = localStorage.getItem('user_meta');
+      return meta ? JSON.parse(meta) : null;
     }
     return null;
   },

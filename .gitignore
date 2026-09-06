@@ -22,8 +22,12 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Environment Variables
+# Environment Variables & Secrets (NEVER COMMIT)
 .env
+.env.*
+*.env
+**/.env
+**/.env.*
 .env.local
 .env.development.local
 .env.test.local

@@ -30,21 +30,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = authService.getCurrentUser();
-    if (storedUser) {
-      setUser(storedUser);
-      // Fetch fresh profile in background
-      authService
-        .getMe()
-        .then((p) => setProfile(p))
-        .catch(() => {
-          // If token expired, clear
-          setUser(null);
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+    // Check session with server via HttpOnly cookie
+    authService
+      .getMe()
+      .then((p) => {
+        setProfile(p);
+        setUser({
+          id: p.id,
+          email: p.email,
+          fullName: p.fullName,
+          role: p.role,
+          token: '',
+        });
+      })
+      .catch(() => {
+        // Not authenticated or session expired
+        setUser(null);
+        setProfile(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const logout = () => {

@@ -19,6 +19,7 @@
 		<jwt.version>0.12.5</jwt.version>
 		<springdoc.version>2.5.0</springdoc.version>
 		<lombok.version>1.18.38</lombok.version>
+		<bucket4j.version>8.10.1</bucket4j.version>
 	</properties>
 
 	<dependencies>
@@ -83,6 +84,13 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>${springdoc.version}</version>
+		</dependency>
+
+		<!-- Rate Limiting & Throttling (Bucket4j) -->
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j-core</artifactId>
+			<version>${bucket4j.version}</version>
 		</dependency>
 
 		<!-- Lombok -->

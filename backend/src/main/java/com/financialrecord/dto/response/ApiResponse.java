@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -22,8 +23,21 @@ public class ApiResponse<T> {
 
     private T data;
 
+    private ErrorDetail error;
+
     @Builder.Default
     private LocalDateTime timestamp = LocalDateTime.now();
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ErrorDetail {
+        private String code;
+        private String message;
+        private List<String> details;
+    }
 
     public static <T> ApiResponse<T> ok(String message, T data) {
         return ApiResponse.<T>builder()
@@ -42,7 +56,25 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
-                .data(null)
+                .error(ErrorDetail.builder().message(message).build())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public static <T> ApiResponse<T> error(String code, String message) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .error(ErrorDetail.builder().code(code).message(message).build())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public static <T> ApiResponse<T> error(String code, String message, List<String> details) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .error(ErrorDetail.builder().code(code).message(message).details(details).build())
                 .timestamp(LocalDateTime.now())
                 .build();
     }

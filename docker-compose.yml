@@ -6,9 +6,9 @@ services:
     container_name: financialrecord_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: financialrecord_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-financialrecord_db}
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -21,8 +21,8 @@ services:
     container_name: financialrecord_pgadmin
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@financialrecord.com
-      PGADMIN_DEFAULT_PASSWORD: adminpassword
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@financialrecord.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-adminpassword}
     ports:
       - "5050:80"
     depends_on:

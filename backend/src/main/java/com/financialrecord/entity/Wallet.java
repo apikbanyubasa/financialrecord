@@ -5,6 +5,8 @@ import com.financialrecord.entity.enums.WalletType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
@@ -18,6 +20,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLDelete(sql = "UPDATE wallets SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class Wallet {
 
     @Id
@@ -51,6 +55,9 @@ public class Wallet {
     @Column(nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal balance = BigDecimal.ZERO;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

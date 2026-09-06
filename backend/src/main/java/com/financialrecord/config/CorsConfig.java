@@ -21,7 +21,7 @@ public class CorsConfig {
         config.setAllowedOriginPatterns(List.of("http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000"));
         config.setAllowedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setExposedHeaders(List.of("Authorization"));
+        config.setExposedHeaders(Arrays.asList("Authorization", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "Retry-After"));
         config.setMaxAge(3600L);
 
         source.registerCorsConfiguration("/**", config);

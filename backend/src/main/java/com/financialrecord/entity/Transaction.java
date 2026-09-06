@@ -4,6 +4,8 @@ import com.financialrecord.entity.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
@@ -17,6 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLDelete(sql = "UPDATE transactions SET deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class Transaction {
 
     @Id
@@ -54,6 +58,9 @@ public class Transaction {
     @Column(name = "is_recurring", nullable = false)
     @Builder.Default
     private boolean isRecurring = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
+import { useDebounce } from '@/hooks/useDebounce';
 import { formatIDR, formatTimeOnly, groupTransactionsByDate } from '@/lib/formatters';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -16,21 +17,27 @@ import {
   Trash2,
   Edit2,
   Filter,
+  Search,
   Calendar,
   Clock,
   ChevronLeft,
   ChevronRight,
   Tag,
   Wallet,
+  AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 
 export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState(0);
   const [selectedTxForEdit, setSelectedTxForEdit] = useState<Transaction | null>(null);
 
-  const { transactions, pageData, isLoading, deleteTransaction, isDeleting } = useTransactions({
+  const debouncedSearch = useDebounce(searchQuery, 400);
+
+  const { transactions, pageData, isLoading, isError, refetch, deleteTransaction, isDeleting } = useTransactions({
     page,
     size: 25,
     type: typeFilter || undefined,
@@ -45,7 +52,19 @@ export default function TransactionsPage() {
     }
   };
 
-  const groupedDates = groupTransactionsByDate(transactions);
+  const filteredTransactions = useMemo(() => {
+    if (!debouncedSearch.trim()) return transactions;
+    const q = debouncedSearch.toLowerCase().trim();
+    return transactions.filter(
+      (tx) =>
+        (tx.description && tx.description.toLowerCase().includes(q)) ||
+        (tx.categoryName && tx.categoryName.toLowerCase().includes(q)) ||
+        (tx.walletName && tx.walletName.toLowerCase().includes(q)) ||
+        String(tx.amount).includes(q)
+    );
+  }, [transactions, debouncedSearch]);
+
+  const groupedDates = groupTransactionsByDate(filteredTransactions);
 
   return (
     <div className="space-y-6">
@@ -90,21 +109,35 @@ export default function TransactionsPage() {
             </button>
           </div>
 
-          {/* Category Filter Dropdown */}
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <select
-              className="h-9 rounded-lg border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-primary font-medium"
-              value={categoryFilter}
-              onChange={(e) => { setCategoryFilter(e.target.value); setPage(0); }}
-            >
-              <option value="">Semua Pos Kategori</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.type === 'INCOME' ? 'Masuk' : 'Keluar'})
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center space-x-3 flex-wrap gap-y-2">
+            {/* Search Input Box with Debounce */}
+            <div className="relative min-w-[200px] max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Cari transaksi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 w-full rounded-lg border border-input bg-background pl-8 pr-3 text-xs focus:ring-1 focus:ring-primary font-medium"
+              />
+            </div>
+
+            {/* Category Filter Dropdown */}
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <select
+                className="h-9 rounded-lg border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-primary font-medium"
+                value={categoryFilter}
+                onChange={(e) => { setCategoryFilter(e.target.value); setPage(0); }}
+              >
+                <option value="">Semua Pos Kategori</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.type === 'INCOME' ? 'Masuk' : 'Keluar'})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       </Card>
@@ -112,6 +145,22 @@ export default function TransactionsPage() {
       {/* Chronological Timeline List */}
       {isLoading ? (
         <LoadingSpinner text="Memuat kronologi transaksi..." className="h-64" />
+      ) : isError ? (
+        <Card className="p-10 text-center space-y-4 max-w-md mx-auto my-12 border-rose-500/20 bg-rose-500/5">
+          <div className="h-12 w-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-bold text-base text-foreground">Gagal Memuat Riwayat Transaksi</h3>
+            <p className="text-xs text-muted-foreground">
+              Terjadi kendala saat mengambil data transaksi dari server. Silakan periksa koneksi Anda dan coba lagi.
+            </p>
+          </div>
+          <Button onClick={() => refetch()} className="gap-2 text-xs">
+            <RotateCcw className="h-3.5 w-3.5" />
+            Coba Lagi
+          </Button>
+        </Card>
       ) : groupedDates.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground space-y-2">
           <Calendar className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />

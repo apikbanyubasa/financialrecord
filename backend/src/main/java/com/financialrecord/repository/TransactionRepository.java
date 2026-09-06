@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +30,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
     BigDecimal sumAmountByUserIdAndTypeAndDateRange(
             @Param("userId") UUID userId,
             @Param("type") TransactionType type,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+
+    @Query("SELECT cast(t.transactionDate as LocalDate), t.type, COALESCE(SUM(t.amount), 0) " +
+           "FROM Transaction t " +
+           "WHERE t.user.id = :userId AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate " +
+           "GROUP BY cast(t.transactionDate as LocalDate), t.type")
+    List<Object[]> sumDailyAmountByUserIdAndDateRange(
+            @Param("userId") UUID userId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
