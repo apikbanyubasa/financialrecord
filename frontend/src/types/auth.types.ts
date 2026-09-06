@@ -36,3 +36,20 @@ export interface ApiResponse<T> {
   data: T;
   timestamp: string;
 }
+
+export interface UpdateProfileRequest {
+  fullName: string;
+  email: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface DeleteAccountRequest {
+  password: string;
+  confirmationPhrase: string;
+}
+

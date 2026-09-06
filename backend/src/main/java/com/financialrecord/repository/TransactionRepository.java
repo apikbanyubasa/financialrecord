@@ -20,70 +20,68 @@ import java.util.UUID;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
 
-    Optional<Transaction> findByIdAndUserId(UUID id, UUID userId);
+        Optional<Transaction> findByIdAndUserId(UUID id, UUID userId);
 
-    Page<Transaction> findByUserIdOrderByTransactionDateDesc(UUID userId, Pageable pageable);
+        Page<Transaction> findByUserIdOrderByTransactionDateDesc(UUID userId, Pageable pageable);
 
-    List<Transaction> findTop10ByUserIdOrderByTransactionDateDesc(UUID userId);
+        List<Transaction> findTop10ByUserIdOrderByTransactionDateDesc(UUID userId);
 
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.type = :type AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate")
-    BigDecimal sumAmountByUserIdAndTypeAndDateRange(
-            @Param("userId") UUID userId,
-            @Param("type") TransactionType type,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate
-    );
+        @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.type = :type AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate")
+        BigDecimal sumAmountByUserIdAndTypeAndDateRange(
+                        @Param("userId") UUID userId,
+                        @Param("type") TransactionType type,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
-    @Query("SELECT cast(t.transactionDate as LocalDate), t.type, COALESCE(SUM(t.amount), 0) " +
-           "FROM Transaction t " +
-           "WHERE t.user.id = :userId AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate " +
-           "GROUP BY cast(t.transactionDate as LocalDate), t.type")
-    List<Object[]> sumDailyAmountByUserIdAndDateRange(
-            @Param("userId") UUID userId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate
-    );
+        @Query("SELECT cast(t.transactionDate as LocalDate), t.type, COALESCE(SUM(t.amount), 0) " +
+                        "FROM Transaction t " +
+                        "WHERE t.user.id = :userId AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate "
+                        +
+                        "GROUP BY cast(t.transactionDate as LocalDate), t.type")
+        List<Object[]> sumDailyAmountByUserIdAndDateRange(
+                        @Param("userId") UUID userId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
-    @Query("SELECT t.category.id, t.category.name, t.category.icon, t.category.color, SUM(t.amount) " +
-           "FROM Transaction t " +
-           "WHERE t.user.id = :userId AND t.type = :type AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate " +
-           "GROUP BY t.category.id, t.category.name, t.category.icon, t.category.color " +
-           "ORDER BY SUM(t.amount) DESC")
-    List<Object[]> sumAmountByCategoryGroup(
-            @Param("userId") UUID userId,
-            @Param("type") TransactionType type,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate
-    );
+        @Query("SELECT t.category.id, t.category.name, t.category.icon, t.category.color, SUM(t.amount) " +
+                        "FROM Transaction t " +
+                        "WHERE t.user.id = :userId AND t.type = :type AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate "
+                        +
+                        "GROUP BY t.category.id, t.category.name, t.category.icon, t.category.color " +
+                        "ORDER BY SUM(t.amount) DESC")
+        List<Object[]> sumAmountByCategoryGroup(
+                        @Param("userId") UUID userId,
+                        @Param("type") TransactionType type,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
+        @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.category.id = :categoryId AND t.type = 'EXPENSE' AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate")
+        BigDecimal sumExpenseByUserIdAndCategoryAndDateRange(
+                        @Param("userId") UUID userId,
+                        @Param("categoryId") UUID categoryId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.category.id = :categoryId AND t.type = 'EXPENSE' AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate")
-    BigDecimal sumExpenseByUserIdAndCategoryAndDateRange(
-            @Param("userId") UUID userId,
-            @Param("categoryId") UUID categoryId,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate
-    );
+        @Query("SELECT t.category.id, t.category.name, t.category.icon, t.category.color, t.type, SUM(t.amount), COUNT(t) "
+                        +
+                        "FROM Transaction t " +
+                        "WHERE t.user.id = :userId " +
+                        "GROUP BY t.category.id, t.category.name, t.category.icon, t.category.color, t.type " +
+                        "HAVING COUNT(t) > 0 AND SUM(t.amount) > 0 " +
+                        "ORDER BY SUM(t.amount) DESC")
+        List<Object[]> findActivePocketsFromTransactions(@Param("userId") UUID userId);
 
-    @Query("SELECT t.category.id, t.category.name, t.category.icon, t.category.color, t.type, SUM(t.amount), COUNT(t) " +
-           "FROM Transaction t " +
-           "WHERE t.user.id = :userId " +
-           "GROUP BY t.category.id, t.category.name, t.category.icon, t.category.color, t.type " +
-           "HAVING COUNT(t) > 0 AND SUM(t.amount) > 0 " +
-           "ORDER BY SUM(t.amount) DESC")
-    List<Object[]> findActivePocketsFromTransactions(@Param("userId") UUID userId);
+        // Wallet Transaction Aggregates
+        @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.wallet.id = :walletId AND t.type = :type")
+        BigDecimal sumAmountByWalletIdAndType(@Param("walletId") UUID walletId, @Param("type") TransactionType type);
 
-    // Wallet Transaction Aggregates
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.wallet.id = :walletId AND t.type = :type")
-    BigDecimal sumAmountByWalletIdAndType(@Param("walletId") UUID walletId, @Param("type") TransactionType type);
+        @Query("SELECT COUNT(t) FROM Transaction t WHERE t.wallet.id = :walletId")
+        long countByWalletId(@Param("walletId") UUID walletId);
 
-    @Query("SELECT COUNT(t) FROM Transaction t WHERE t.wallet.id = :walletId")
-    long countByWalletId(@Param("walletId") UUID walletId);
+        // Global Admin Aggregates
+        @Query("SELECT COUNT(t) FROM Transaction t")
+        long countTotalTransactions();
 
-    // Global Admin Aggregates
-    @Query("SELECT COUNT(t) FROM Transaction t")
-    long countTotalTransactions();
-
-    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t")
-    BigDecimal sumTotalVolume();
+        @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t")
+        BigDecimal sumTotalVolume();
 }
