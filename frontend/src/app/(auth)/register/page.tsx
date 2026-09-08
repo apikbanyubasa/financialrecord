@@ -6,28 +6,57 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card';
-import { WalletCards, UserCheck } from 'lucide-react';
+import { WalletCards } from 'lucide-react';
+import { validateFullName, validateEmail, validatePassword, FormErrors } from '@/lib/validation';
 
 export default function RegisterPage() {
   const { register, isRegistering } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [customError, setCustomError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const validateForm = (): boolean => {
+    const errs: FormErrors = {};
+
+    const nameErr = validateFullName(fullName);
+    if (nameErr) errs.fullName = nameErr;
+
+    const emailErr = validateEmail(email);
+    if (emailErr) errs.email = emailErr;
+
+    const passErr = validatePassword(password, true);
+    if (passErr) errs.password = passErr;
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCustomError(null);
+    setServerError(null);
 
-    if (password.length < 6) {
-      setCustomError('Password minimal 6 karakter');
+    if (!validateForm()) {
       return;
     }
 
     try {
-      await register({ fullName, email, password });
+      await register({ fullName: fullName.trim(), email: email.trim(), password });
     } catch (err: any) {
-      setCustomError(err?.response?.data?.message || 'Registrasi gagal. Silakan coba lagi.');
+      const msg = err?.response?.data?.message || err?.response?.data?.error?.message || 'Registrasi gagal. Silakan coba lagi.';
+      setServerError(msg);
+
+      // Map backend validation errors to fields if available
+      const details = err?.response?.data?.error?.details || err?.response?.data?.data;
+      if (typeof details === 'object' && details !== null) {
+        setErrors((prev) => ({
+          ...prev,
+          email: details.email,
+          password: details.password,
+          fullName: details.fullName,
+        }));
+      }
     }
   };
 
@@ -56,10 +85,10 @@ export default function RegisterPage() {
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {customError && (
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              {serverError && (
                 <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-xs font-medium border border-destructive/20">
-                  {customError}
+                  {serverError}
                 </div>
               )}
 
@@ -68,7 +97,11 @@ export default function RegisterPage() {
                 type="text"
                 placeholder="Budi Pratama"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                error={errors.fullName}
+                onChange={(e) => {
+                  setFullName(e.target.value);
+                  if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: undefined }));
+                }}
                 required
               />
 
@@ -77,16 +110,25 @@ export default function RegisterPage() {
                 type="email"
                 placeholder="nama@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                error={errors.email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+                }}
                 required
               />
 
               <Input
-                label="Password (min 6 karakter)"
+                label="Password (min. 8 karakter & kombinasi)"
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                error={errors.password}
+                helperText="Minimal 8 karakter kombinasi huruf dan angka"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
                 required
               />
 

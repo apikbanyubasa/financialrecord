@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useBudgets } from '@/hooks/useBudgets';
 import { formatIDR, formatTimeOnly, formatMonthYear } from '@/lib/formatters';
@@ -8,8 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Progress } from '@/components/ui/Progress';
-import { NlpQuickEntryModal } from '@/components/user/NlpQuickEntryModal';
-import { SetBudgetModal } from '@/components/user/SetBudgetModal';
+import dynamic from 'next/dynamic';
+const NlpQuickEntryModal = dynamic(
+  () => import('@/components/user/NlpQuickEntryModal').then((m) => m.NlpQuickEntryModal),
+  { ssr: false }
+);
+const SetBudgetModal = dynamic(
+  () => import('@/components/user/SetBudgetModal').then((m) => m.SetBudgetModal),
+  { ssr: false }
+);
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { PocketType } from '@/types/wallet.types';
 import { Transaction } from '@/types/transaction.types';
@@ -49,6 +56,8 @@ import {
   Globe,
   BarChart3,
   Clock,
+  AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 
 const iconComponents: Record<string, any> = {
@@ -90,6 +99,10 @@ const MONTH_NAMES = [
 ];
 
 export default function WalletsPage() {
+  useEffect(() => {
+    document.title = 'Kantong Pos Keuangan | FinancialRecord';
+  }, []);
+
   const currentDateStr = useMemo(() => new Date().toISOString().slice(0, 10), []); // "YYYY-MM-DD"
   const currentMonthStr = useMemo(() => new Date().toISOString().slice(0, 7), []); // "YYYY-MM"
   const currentYearStr = useMemo(() => String(new Date().getFullYear()), []); // "YYYY"
@@ -100,10 +113,26 @@ export default function WalletsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
   const [selectedYear, setSelectedYear] = useState<string>(currentYearStr);
 
-  const { transactions, isLoading: isTxLoading } = useTransactions({ size: 1000 });
-  const { budgets, isLoading: isBudgetsLoading } = useBudgets(
+  const {
+    transactions,
+    isLoading: isTxLoading,
+    isError: isTxError,
+    refetch: refetchTx,
+  } = useTransactions({ size: 1000 });
+  const {
+    budgets,
+    isLoading: isBudgetsLoading,
+    isError: isBudgetsError,
+    refetch: refetchBudgets,
+  } = useBudgets(
     periodMode === 'MONTHLY' ? selectedMonth : currentMonthStr
   );
+
+  const isError = isTxError || isBudgetsError;
+  const refetch = () => {
+    refetchTx();
+    refetchBudgets();
+  };
 
   const [activeTab, setActiveTab] = useState<PocketType>('INCOME');
   const [isNlpModalOpen, setIsNlpModalOpen] = useState(false);
@@ -826,6 +855,22 @@ export default function WalletsPage() {
       {/* ========================================================= */}
       {isLoading ? (
         <LoadingSpinner text="Memuat pos transaksi & data budget..." className="h-64" />
+      ) : isError ? (
+        <Card className="p-10 text-center space-y-4 max-w-md mx-auto my-12 border-rose-500/20 bg-rose-500/5">
+          <div className="h-12 w-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="font-bold text-base text-foreground">Gagal Memuat Kantong Pos</h3>
+            <p className="text-xs text-muted-foreground">
+              Terjadi kendala saat menyinkronkan data pos keuangan dari server. Silakan periksa koneksi Anda dan coba lagi.
+            </p>
+          </div>
+          <Button onClick={() => refetch()} className="gap-2 text-xs" variant="outline">
+            <RotateCcw className="h-3.5 w-3.5" />
+            Coba Lagi
+          </Button>
+        </Card>
       ) : displayedPockets.length === 0 ? (
         /* Empty State */
         <Card className="border-dashed border-2 border-border/80 p-10 text-center space-y-4 bg-card/50">

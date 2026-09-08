@@ -28,7 +28,6 @@ public class TransactionResponse {
     private TransactionType type;
     private LocalDateTime transactionDate;
     private String description;
-    private String receiptImageUrl;
 
     @JsonProperty("isRecurring")
     private boolean isRecurring;

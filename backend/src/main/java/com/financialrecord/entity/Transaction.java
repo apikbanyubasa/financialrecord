@@ -52,9 +52,6 @@ public class Transaction {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "receipt_image_url", length = 500)
-    private String receiptImageUrl;
-
     @Column(name = "is_recurring", nullable = false)
     @Builder.Default
     private boolean isRecurring = false;

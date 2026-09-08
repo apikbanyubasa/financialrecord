@@ -4,8 +4,11 @@ import com.financialrecord.entity.Transaction;
 import com.financialrecord.entity.enums.TransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,10 +23,17 @@ import java.util.UUID;
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, UUID>, JpaSpecificationExecutor<Transaction> {
 
+        @EntityGraph(attributePaths = {"wallet", "category"})
         Optional<Transaction> findByIdAndUserId(UUID id, UUID userId);
 
+        @Override
+        @EntityGraph(attributePaths = {"wallet", "category"})
+        Page<Transaction> findAll(Specification<Transaction> spec, Pageable pageable);
+
+        @EntityGraph(attributePaths = {"wallet", "category"})
         Page<Transaction> findByUserIdOrderByTransactionDateDesc(UUID userId, Pageable pageable);
 
+        @EntityGraph(attributePaths = {"wallet", "category"})
         List<Transaction> findTop10ByUserIdOrderByTransactionDateDesc(UUID userId);
 
         @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t WHERE t.user.id = :userId AND t.type = :type AND t.transactionDate >= :startDate AND t.transactionDate <= :endDate")
@@ -84,4 +94,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
 
         @Query("SELECT COALESCE(SUM(t.amount), 0) FROM Transaction t")
         BigDecimal sumTotalVolume();
+
+        @Modifying
+        @Query("UPDATE Transaction t SET t.deletedAt = CURRENT_TIMESTAMP WHERE t.user.id = :userId AND t.deletedAt IS NULL")
+        void softDeleteAllByUserId(@Param("userId") UUID userId);
 }

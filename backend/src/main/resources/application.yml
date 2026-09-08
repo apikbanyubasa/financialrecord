@@ -58,10 +58,7 @@ app:
       model: ${OPENAI_MODEL:gpt-4o-mini}
       endpoint: https://api.openai.com/v1
     provider: ${AI_PROVIDER:gemini} # 'gemini' or 'openai' or 'mock'
-
-  storage:
-    upload-dir: ${UPLOAD_DIR:uploads/receipts}
-
+ 
   rate-limiting:
     enabled: ${RATE_LIMITING_ENABLED:true}
     auth-limit-per-minute: ${RATE_LIMIT_AUTH_PER_MIN:10}

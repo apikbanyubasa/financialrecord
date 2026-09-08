@@ -24,6 +24,17 @@ api.interceptors.response.use(
         }
       }
     }
+
+    if (error.response && error.response.status === 429) {
+      const retryAfter = error.response.headers['retry-after'];
+      const serverMessage = error.response.data?.message || error.response.data?.error?.message;
+      if (serverMessage) {
+        error.message = serverMessage;
+      } else if (retryAfter) {
+        error.message = `Terlalu banyak permintaan. Silakan tunggu ${retryAfter} detik lagi.`;
+      }
+    }
+
     return Promise.reject(error);
   }
 );

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -33,6 +33,10 @@ import {
 type TimeFilterMode = 'ALL' | 'DAILY' | 'MONTHLY' | 'YEARLY';
 
 export default function TransactionsPage() {
+  useEffect(() => {
+    document.title = 'Kronologi Transaksi | FinancialRecord';
+  }, []);
+
   const currentDateStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const currentMonthStr = useMemo(() => new Date().toISOString().slice(0, 7), []);
   const currentYearStr = useMemo(() => String(new Date().getFullYear()), []);

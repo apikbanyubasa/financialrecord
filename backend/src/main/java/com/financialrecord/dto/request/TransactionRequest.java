@@ -36,8 +36,6 @@ public class TransactionRequest {
 
     private String description;
 
-    private String receiptImageUrl;
-
     @Builder.Default
     private boolean isRecurring = false;
 }

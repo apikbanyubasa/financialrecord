@@ -13,7 +13,6 @@ export interface Transaction {
   type: TransactionType;
   transactionDate: string;
   description?: string;
-  receiptImageUrl?: string;
   isRecurring: boolean;
   createdAt: string;
 }
@@ -25,7 +24,6 @@ export interface TransactionRequest {
   type: TransactionType;
   transactionDate: string;
   description?: string;
-  receiptImageUrl?: string;
   isRecurring?: boolean;
 }
 

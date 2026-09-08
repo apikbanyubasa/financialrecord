@@ -1,13 +1,28 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { formatIDR, formatMonthYear } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
-import { CashflowChart } from '@/components/user/CashflowChart';
-import { CategoryDonutChart } from '@/components/user/CategoryDonutChart';
-import { RecentTransactionsTable } from '@/components/user/RecentTransactionsTable';
+import dynamic from 'next/dynamic';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+
+const CashflowChart = dynamic(
+  () => import('@/components/user/CashflowChart').then((m) => m.CashflowChart),
+  {
+    ssr: false,
+    loading: () => <LoadingSpinner text="Memuat visualisasi arus kas..." className="h-64" />,
+  }
+);
+
+const CategoryDonutChart = dynamic(
+  () => import('@/components/user/CategoryDonutChart').then((m) => m.CategoryDonutChart),
+  {
+    ssr: false,
+    loading: () => <LoadingSpinner text="Memuat diagram alokasi..." className="h-64" />,
+  }
+);
+import { RecentTransactionsTable } from '@/components/user/RecentTransactionsTable';
 import { CashflowDataPoint, CategoryBreakdownItem } from '@/types/transaction.types';
 import {
   WalletCards,
@@ -48,6 +63,10 @@ const DYNAMIC_YEARS_LIST = Array.from({ length: 5 }, (_, i) => currentYearNow - 
 const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => currentYearNow - i); // [2026, 2025, 2024, 2023, 2022]
 
 export default function DashboardPage() {
+  useEffect(() => {
+    document.title = 'Dashboard Arus Kas | FinancialRecord';
+  }, []);
+
   const {
     summary,
     transactions,

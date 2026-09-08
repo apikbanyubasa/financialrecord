@@ -4,6 +4,7 @@ import com.financialrecord.entity.Wallet;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,4 +29,8 @@ public interface WalletRepository extends JpaRepository<Wallet, UUID> {
 
     @Query("SELECT COALESCE(SUM(w.balance), 0) FROM Wallet w WHERE w.user.id = :userId")
     BigDecimal sumBalanceByUserId(@Param("userId") UUID userId);
+
+    @Modifying
+    @Query("UPDATE Wallet w SET w.balance = 0 WHERE w.user.id = :userId")
+    void resetAllBalancesByUserId(@Param("userId") UUID userId);
 }

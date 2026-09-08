@@ -33,6 +33,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/swagger-ui") ||
+               path.startsWith("/v3/api-docs") ||
+               path.startsWith("/actuator");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
@@ -70,6 +78,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setHeader("Retry-After", String.valueOf(waitForSeconds));
 
             ApiResponse<Object> errorResponse = ApiResponse.error(
+                    "RATE_LIMIT_EXCEEDED",
                     "Terlalu banyak permintaan (Rate limit exceeded). Silakan coba lagi dalam " + waitForSeconds + " detik."
             );
 
@@ -83,11 +92,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private RateLimitTier determineTier(String uri) {
         if (uri.startsWith("/api/v1/auth/login") || uri.startsWith("/api/v1/auth/register")) {
             return RateLimitTier.AUTH;
-        } else if (uri.startsWith("/api/v1/user/ai/")) {
+        } else if (uri.startsWith("/api/v1/user/ai")) {
             return RateLimitTier.AI_NLP;
-        } else if (uri.startsWith("/api/v1/admin/")) {
+        } else if (uri.startsWith("/api/v1/admin")) {
             return RateLimitTier.ADMIN_API;
-        } else if (uri.startsWith("/api/v1/user/")) {
+        } else if (uri.startsWith("/api/v1/user") || uri.startsWith("/api/v1/auth/me")) {
             return RateLimitTier.USER_API;
         } else {
             return RateLimitTier.PUBLIC;

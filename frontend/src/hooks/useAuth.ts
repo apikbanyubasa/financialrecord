@@ -7,7 +7,17 @@ import { useAuthContext } from '@/providers/AuthProvider';
 import { useRouter } from 'next/navigation';
 
 export function useAuth() {
-  const { user, profile, isLoading, isAuthenticated, isAdmin, logout, setUserState } = useAuthContext();
+  const {
+    user,
+    profile,
+    isLoading,
+    isAuthenticated,
+    isAdmin,
+    logout,
+    setUserState,
+    refreshProfile,
+    updateProfileState,
+  } = useAuthContext();
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -40,6 +50,8 @@ export function useAuth() {
     isAuthenticated,
     isAdmin,
     logout,
+    refreshProfile,
+    updateProfileState,
     login: loginMutation.mutateAsync,
     isLoggingIn: loginMutation.isPending,
     loginError: loginMutation.error,

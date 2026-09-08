@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useBudgets } from '@/hooks/useBudgets';
 import { useTransactions } from '@/hooks/useTransactions';
 import { formatIDR } from '@/lib/formatters';
@@ -24,13 +24,36 @@ import {
   ArrowRight,
   TrendingDown,
   ShieldAlert,
+  AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 
 export default function BudgetsPage() {
+  useEffect(() => {
+    document.title = 'Limit & Target Budget | FinancialRecord';
+  }, []);
+
   const currentMonthStr = new Date().toISOString().slice(0, 7); // "YYYY-MM"
   const [period, setPeriod] = useState(currentMonthStr);
-  const { budgets, isLoading: isBudgetsLoading, deleteBudget } = useBudgets(period);
-  const { transactions, isLoading: isTxLoading } = useTransactions({ size: 500 });
+  const {
+    budgets,
+    isLoading: isBudgetsLoading,
+    isError: isBudgetsError,
+    refetch: refetchBudgets,
+    deleteBudget,
+  } = useBudgets(period);
+  const {
+    transactions,
+    isLoading: isTxLoading,
+    isError: isTxError,
+    refetch: refetchTx,
+  } = useTransactions({ size: 500 });
+
+  const isError = isBudgetsError || isTxError;
+  const refetch = () => {
+    refetchBudgets();
+    refetchTx();
+  };
 
   const [isSetModalOpen, setIsSetModalOpen] = useState(false);
   const [selectedBudgetForEdit, setSelectedBudgetForEdit] = useState<Budget | null>(null);
@@ -287,6 +310,22 @@ export default function BudgetsPage() {
         <CardContent className="pt-4">
           {isLoading ? (
             <LoadingSpinner text="Memuat data budget & pos transaksi..." className="h-48" />
+          ) : isError ? (
+            <div className="p-8 text-center space-y-4 max-w-md mx-auto my-6 border border-rose-500/20 bg-rose-500/5 rounded-2xl">
+              <div className="h-12 w-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-sm text-foreground">Gagal Memuat Target Budget</h3>
+                <p className="text-xs text-muted-foreground">
+                  Terjadi kendala saat menyinkronkan data budget dengan server. Silakan periksa koneksi Anda dan coba lagi.
+                </p>
+              </div>
+              <Button onClick={() => refetch()} className="gap-2 text-xs" variant="outline">
+                <RotateCcw className="h-3.5 w-3.5" />
+                Coba Lagi
+              </Button>
+            </div>
           ) : budgets.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground space-y-3">
               <PieChart className="h-10 w-10 text-muted-foreground/40 mx-auto" />

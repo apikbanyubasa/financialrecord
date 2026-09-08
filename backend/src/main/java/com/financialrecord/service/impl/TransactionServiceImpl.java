@@ -160,7 +160,6 @@ public class TransactionServiceImpl implements TransactionService {
                 .type(txType)
                 .transactionDate(request.getTransactionDate() != null ? request.getTransactionDate() : LocalDateTime.now())
                 .description(request.getDescription() != null && !request.getDescription().trim().isEmpty() ? request.getDescription().trim() : (category != null ? category.getName() : "Transaksi"))
-                .receiptImageUrl(request.getReceiptImageUrl())
                 .isRecurring(request.isRecurring())
                 .build();
 
@@ -222,7 +221,6 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setType(request.getType());
         transaction.setTransactionDate(request.getTransactionDate());
         transaction.setDescription(request.getDescription());
-        transaction.setReceiptImageUrl(request.getReceiptImageUrl());
         transaction.setRecurring(request.isRecurring());
 
         Transaction updated = transactionRepository.save(transaction);
@@ -411,7 +409,6 @@ public class TransactionServiceImpl implements TransactionService {
                 .type(t.getType())
                 .transactionDate(t.getTransactionDate())
                 .description(t.getDescription())
-                .receiptImageUrl(t.getReceiptImageUrl())
                 .isRecurring(t.isRecurring())
                 .createdAt(t.getCreatedAt())
                 .build();

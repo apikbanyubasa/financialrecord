@@ -86,8 +86,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html")
                         .permitAll()
 
-                        // Health Check & Static Uploads
-                        .requestMatchers("/uploads/**", "/actuator/health").permitAll()
+                        // Health Checks
+                        .requestMatchers("/actuator/health", "/api/health", "/api/v1/health").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Authenticated User Profile Endpoint

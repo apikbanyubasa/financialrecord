@@ -57,6 +57,16 @@ export function formatShortDate(dateString: string | Date | undefined): string {
   }
 }
 
+export function formatJoinedDate(dateString: string | Date | undefined): string {
+  if (!dateString) return 'Baru Bergabung';
+  try {
+    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    return format(date, 'd MMMM yyyy', { locale: id });
+  } catch {
+    return String(dateString);
+  }
+}
+
 export function formatPercentage(value: number | undefined): string {
   if (value === undefined || isNaN(value)) return '0%';
   return `${value.toFixed(1)}%`;

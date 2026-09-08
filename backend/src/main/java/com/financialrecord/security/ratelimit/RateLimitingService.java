@@ -6,6 +6,7 @@ import io.github.bucket4j.ConsumptionProbe;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -81,6 +82,35 @@ public class RateLimitingService {
         return Bucket.builder()
                 .addLimit(bandwidth)
                 .build();
+    }
+
+    /**
+     * Membersihkan bucket yang sudah idle (kapasitas token penuh) secara berkala setiap 30 menit
+     * untuk mencegah akumulasi memori akibat entri IP anonim yang tidak aktif.
+     */
+    @Scheduled(fixedRate = 1800000)
+    public void cleanupIdleBuckets() {
+        if (bucketCache.isEmpty()) {
+            return;
+        }
+        int initialSize = bucketCache.size();
+        bucketCache.entrySet().removeIf(entry -> {
+            Bucket bucket = entry.getValue();
+            return bucket.getAvailableTokens() >= getLimitForCacheKey(entry.getKey());
+        });
+        int removed = initialSize - bucketCache.size();
+        if (removed > 0) {
+            log.debug("RateLimitingService: Membersihkan {} bucket idle dari memori. Sisa bucket aktif: {}", removed, bucketCache.size());
+        }
+    }
+
+    private long getLimitForCacheKey(String cacheKey) {
+        for (RateLimitTier tier : RateLimitTier.values()) {
+            if (cacheKey.startsWith(tier.name() + ":")) {
+                return getLimitForTier(tier);
+            }
+        }
+        return publicLimitPerMinute;
     }
 
     /**

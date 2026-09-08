@@ -12,6 +12,8 @@ interface AuthContextType {
   isAdmin: boolean;
   logout: () => void;
   setUserState: (user: AuthResponse | null) => void;
+  refreshProfile: () => Promise<void>;
+  updateProfileState: (updated: UserProfile) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,6 +24,8 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   logout: () => {},
   setUserState: () => {},
+  refreshProfile: async () => {},
+  updateProfileState: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -29,28 +33,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchCurrentProfile = async () => {
+    try {
+      const p = await authService.getMe();
+      setProfile(p);
+      setUser({
+        id: p.id,
+        email: p.email,
+        fullName: p.fullName,
+        role: p.role,
+        token: '',
+      });
+      return p;
+    } catch {
+      setUser(null);
+      setProfile(null);
+      return null;
+    }
+  };
+
   useEffect(() => {
     // Check session with server via HttpOnly cookie
-    authService
-      .getMe()
-      .then((p) => {
-        setProfile(p);
-        setUser({
-          id: p.id,
-          email: p.email,
-          fullName: p.fullName,
-          role: p.role,
-          token: '',
-        });
-      })
-      .catch(() => {
-        // Not authenticated or session expired
-        setUser(null);
-        setProfile(null);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    fetchCurrentProfile().finally(() => {
+      setIsLoading(false);
+    });
   }, []);
 
   const logout = () => {
@@ -61,6 +67,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setUserState = (newUser: AuthResponse | null) => {
     setUser(newUser);
+    if (newUser) {
+      fetchCurrentProfile();
+    }
+  };
+
+  const refreshProfile = async () => {
+    await fetchCurrentProfile();
+  };
+
+  const updateProfileState = (updated: UserProfile) => {
+    setProfile(updated);
+    setUser((prev) =>
+      prev
+        ? {
+            ...prev,
+            fullName: updated.fullName,
+            email: updated.email,
+          }
+        : null
+    );
   };
 
   const isAuthenticated = !!user;
@@ -76,6 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin,
         logout,
         setUserState,
+        refreshProfile,
+        updateProfileState,
       }}
     >
       {children}
