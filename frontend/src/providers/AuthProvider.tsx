@@ -48,15 +48,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setUser(null);
       setProfile(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user_meta');
+      }
       return null;
     }
   };
 
   useEffect(() => {
-    // Check session with server via HttpOnly cookie
+    let isMounted = true;
+
+    // Safety fallback timeout: prevent infinite loading indicator if backend/network is unresponsive
+    const fallbackTimer = setTimeout(() => {
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    }, 4000);
+
     fetchCurrentProfile().finally(() => {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+        clearTimeout(fallbackTimer);
+      }
     });
+
+    return () => {
+      isMounted = false;
+      clearTimeout(fallbackTimer);
+    };
   }, []);
 
   const logout = () => {

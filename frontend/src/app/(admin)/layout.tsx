@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        router.push('/login');
+        router.push('/login?expired=true');
       } else if (!isAdmin) {
         router.push('/dashboard');
       }

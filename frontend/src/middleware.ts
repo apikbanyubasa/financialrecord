@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const authToken = request.cookies.get('auth_token')?.value;
-  const { pathname } = request.nextUrl;
+  const rawToken = request.cookies.get('auth_token')?.value;
+  const authToken =
+    rawToken && rawToken !== 'undefined' && rawToken !== 'null' && rawToken.trim() !== ''
+      ? rawToken
+      : null;
+
+  const { pathname, searchParams } = request.nextUrl;
 
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
   const isProtectedPage =
@@ -13,8 +18,29 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/budgets') ||
     pathname.startsWith('/admin');
 
-  // Redirect authenticated user away from login/register to dashboard
-  if (isAuthPage && authToken) {
+  // Handle explicit session reset / expired / logout requests
+  const isSessionReset =
+    searchParams.has('expired') ||
+    searchParams.has('logout') ||
+    searchParams.has('unauthenticated');
+
+  // Handle Auth Pages (/login, /register)
+  if (isAuthPage) {
+    if (isSessionReset || !authToken) {
+      const response = NextResponse.next();
+      if (rawToken) {
+        response.cookies.delete('auth_token');
+        response.cookies.set({
+          name: 'auth_token',
+          value: '',
+          path: '/',
+          maxAge: 0,
+        });
+      }
+      return response;
+    }
+
+    // Only redirect authenticated user if token is valid and no reset requested
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

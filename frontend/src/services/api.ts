@@ -11,15 +11,28 @@ export const api = axios.create({
   },
 });
 
+let isRedirectingToLogin = false;
+
 // Response Interceptor: Handle 401 Unauthorized globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      if (typeof window !== 'undefined') {
-        const isAuthPage = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/register');
-        if (!isAuthPage) {
+      // 1. Jangan redirect jika 401 berasal dari pengecekan sesi berkala/awal (/auth/me)
+      const isAuthMeProbe = error.config?.url?.includes('/auth/me');
+
+      if (!isAuthMeProbe && typeof window !== 'undefined' && !isRedirectingToLogin) {
+        const pathname = window.location.pathname;
+        const isPublicPage =
+          pathname === '/' ||
+          pathname.startsWith('/login') ||
+          pathname.startsWith('/register');
+
+        // Hanya arahkan ke /login jika pengguna sedang mengakses halaman proteksi
+        if (!isPublicPage) {
+          isRedirectingToLogin = true;
           localStorage.removeItem('user_meta');
+          document.cookie = 'auth_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
           window.location.href = '/login?expired=true';
         }
       }

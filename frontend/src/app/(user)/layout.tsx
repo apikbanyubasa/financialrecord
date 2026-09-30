@@ -18,7 +18,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push('/login?expired=true');
     }
   }, [isLoading, isAuthenticated, router]);
 
